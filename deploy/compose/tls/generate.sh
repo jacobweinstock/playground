@@ -15,23 +15,40 @@ update_csr() {
 
 # cleanup will remove unneeded files
 cleanup() {
-	rm -rf ca-key.pem ca.csr ca.pem server.csr server.pem
+	rm -rf ca-key.pem ca.csr ca.pem tinkerbell.csr tinkerbell.pem
 }
 
-# gen will generate the key and bundle
+root_ca() {
+	# Generate the root CA key and certificate
+	cfssl gencert -initca /code/tls/ca.json | cfssljson -bare ca
+}
+
+intermediate_ca() {
+	# Generate the intermediate CA key and certificate
+	cfssl gencert -initca /code/tls/intermediate-ca.json | cfssljson -bare intermediate_ca
+	cfssl sign -ca ca.pem -ca-key ca-key.pem -config /code/tls/cfssl.json -profile intermediate_ca intermediate_ca.csr | cfssljson -bare intermediate_ca
+}
+
+host_cert() {
+	# Generate the host certificate
+	cfssl gencert -ca intermediate_ca.pem -ca-key intermediate_ca-key.pem -config /code/tls/cfssl.json -profile=server /code/tls/host.json | cfssljson -bare tinkerbell
+}
+
 gen() {
 	local bundle_destination="$1"
 	local key_destination="$2"
-	cfssl gencert -initca /code/tls/csr.json | cfssljson -bare ca -
-	cfssl gencert -config /code/tls/ca-config.json -ca ca.pem -ca-key ca-key.pem -profile server /code/tls/csr.json | cfssljson -bare server
-	cat server.pem ca.pem >"${bundle_destination}"
-	mv server-key.pem "${key_destination}"
+	# Generate the TLS certificates
+	root_ca
+	intermediate_ca
+	host_cert
+	cat tinkerbell.pem intermediate_ca.pem >"${bundle_destination}"
+	mv tinkerbell-key.pem "${key_destination}"
 }
 
 # main orchestrates the process
 main() {
 	local sans_ip="$1"
-	local csr_file="/code/tls/csr.json"
+	local csr_file="/code/tls/host.json"
 	local bundle_file="/certs/${FACILITY:-onprem}/bundle.pem"
 	local server_key_file="/certs/${FACILITY:-onprem}/server-key.pem"
 

@@ -15,7 +15,11 @@
   },
   "names": [
     {
-      "L": "@FACILITY@"
+      "C": "Bare Metal",
+      "L": "Neverland",
+      "O": "Tinkerbell",
+      "OU": "Tinkerbell Root CA",
+      "ST": "England"
     }
   ]
 }
