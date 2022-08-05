@@ -83,6 +83,8 @@ Rel_Down(nic, fileServer, "Reads Hook kernel/initramfs and raw OS image from", "
 Lay_Right(templateResource, hardwareResource)
 Lay_Right(workflowResource, templateResource)
 
+Lay_Right(hegel, boots)
+
 'LAYOUT_LANDSCAPE()
 SHOW_LEGEND()
 

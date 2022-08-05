@@ -13,7 +13,6 @@
 
 title Level 2: Container diagram\nPhysical Machine
 
-
 System_Boundary(machine, "Physical Machine") {
     System_Boundary(hook, "Hook") {
         Container(tinkWorker, "Tink worker", "Go, gRPC")
