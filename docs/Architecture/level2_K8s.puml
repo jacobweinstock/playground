@@ -1,0 +1,78 @@
+@startuml Tinkerbell
+!define C4PUML_URL  https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master
+
+!include C4PUML_URL/C4_Context.puml
+!include C4PUML_URL/C4_Container.puml
+
+!define SPRITES_URL https://raw.githubusercontent.com/plantuml-stdlib/gilbarbara-plantuml-sprites/v1.0/sprites
+!define FONTAWESOME https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/font-awesome-5
+' see images possibilities here: https://github.com/tupadr3/plantuml-icon-font-sprites/blob/e53fd61259c0f2449edfe304cad83f51d0fbb5c1/font-awesome-5/index.md
+
+!include FONTAWESOME/users.puml
+!include SPRITES_URL/kubernetes.puml
+
+title Level 2: Container diagram\nTinkerbell Provisioning Engine
+
+Person(capt, "CAPT", "Cluster API Tinkerbell", $sprite="users")
+System(tinkerbell, "Tinkerbell", "Provisioning Engine")
+System_Ext(machine, "Physical Machine", "")
+System_Ext(fileServer, "File Server")
+System_Ext(containerRegistry, "Container Registry")
+
+System_Boundary(tinkerbell, "Tinkerbell Provisioning Engine") {
+    System_Boundary(k8s, "Kubernetes Cluster") {
+        Container(hardwareResource, "hardware", "CRD,CRO")
+        Container(templateResource, "template", "CRD,CRO")
+        Container(workflowResource, "workflow", "CRD,CRO")
+        Container(bmcTaskResource, "bmc.task", "CRD,CRO")
+        Container(bmcJobResource, "bmc.job", "CRD,CRO")
+        Container(bmcMachineResource, "bmc.machine", "CRD,CRO")
+    }
+    Container(tinkServer, "Tink Server", "Go, gRPC", $descr="Provides workflow read, update, and status functionality")
+    Container(boots, "Boots", "Go, DHCP, TFTP, HTTP", $descr="Provides DHCP and serves iPXE binaries and scripts")
+    Container(hegel, "Hegel", "Go, gRPC, HTTP", $descr="Provides metadata for Hardware")
+    Container(rufio, "Rufio", "Go", $descr="Kubernetes controller for interacting with BMCs")
+    Container(tinkController, "Tink Controller", "Go", $descr="Kubernetes controller for workflows")
+}
+
+' CAPT
+Rel_Down(capt, hardwareResource, "Reads from and writes to", "HTTPS")
+Rel_Down(capt, templateResource, "Reads from and writes to", "HTTPS")
+Rel_Down(capt, workflowResource, "Reads from and writes to", "HTTPS")
+Rel_Down(capt, bmcJobResource, "Reads from and writes to", "HTTPS")
+Rel_Down(capt, bmcTaskResource, "Reads from and writes to", "HTTPS")
+Rel_Down(capt, bmcMachineResource, "Reads from and writes to", "HTTPS")
+
+' Rufio
+Rel(rufio, machine, "Sets power states and boot device using", "ipmi/redfish")
+Rel_Up(rufio, bmcJobResource, "Reads from", "HTTPS")
+Rel_Up(rufio, bmcTaskResource, "Reads from and writes to", "HTTPS")
+Rel_Up(rufio, bmcMachineResource, "Writes to", "HTTPS")
+
+' Tink Worker
+Rel_Up(machine, tinkServer, "Reads provisioning manifest from, writes provisioning status to", "gRPC")
+Rel_Down(machine, containerRegistry, "Reads workflow action images from", "HTTPS")
+
+' Hegel
+Rel_Up(machine, hegel, "Reads metadata from", "http")
+Rel_Up(hegel, hardwareResource, "Reads from", "HTTPS")
+
+' Boots
+BiRel_Up(machine, boots, "DHCP message exchange", "dhcp")
+BiRel_Down(machine, boots, "DHCP message exchange and reads iPXE binaries and scripts from", "dhcp,tftp,http")
+BiRel_Up(machine, boots, "DHCP message exchange", "dhcp")
+Rel_Up(boots, hardwareResource, "Reads from", "HTTPS")
+
+' Tink Server
+Rel_Up(tinkServer, workflowResource, "Reads from and writes to", "HTTPS")
+
+' Tink Controller
+Rel_Up(tinkController, workflowResource, "Reads from and writes to", "HTTPS")
+Rel_Up(tinkController, templateResource, "Reads from", "HTTPS")
+
+' External
+Rel_Down(machine, fileServer, "Reads Hook kernel/initramfs and raw OS image from", "HTTPS")
+
+SHOW_LEGEND()
+
+@enduml

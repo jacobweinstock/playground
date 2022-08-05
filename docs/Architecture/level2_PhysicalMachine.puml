@@ -1,0 +1,53 @@
+@startuml Tinkerbell
+!define C4PUML_URL  https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master
+
+!include C4PUML_URL/C4_Context.puml
+!include C4PUML_URL/C4_Container.puml
+
+!define SPRITES_URL https://raw.githubusercontent.com/plantuml-stdlib/gilbarbara-plantuml-sprites/v1.0/sprites
+!define FONTAWESOME https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/font-awesome-5
+' see images possibilities here: https://github.com/tupadr3/plantuml-icon-font-sprites/blob/e53fd61259c0f2449edfe304cad83f51d0fbb5c1/font-awesome-5/index.md
+
+!include FONTAWESOME/users.puml
+!include SPRITES_URL/kubernetes.puml
+
+title Level 2: Container diagram\nPhysical Machine
+
+
+System_Boundary(machine, "Physical Machine") {
+    System_Boundary(hook, "Hook") {
+        Container(tinkWorker, "Tink worker", "Go, gRPC")
+    }
+    System_Ext(os, "OS")
+    System_Ext(nic, "NIC")
+    System_Ext(bmc, "BMC")
+}
+System_Ext(fileServer, "File Server")
+System_Ext(containerRegistry, "Container Registry")
+
+Container(tinkServer, "Tink Server", "Go, gRPC", $descr="Provides workflow read, update, and status functionality")
+Container(boots, "Boots", "Go, DHCP, TFTP, HTTP", $descr="Provides DHCP and serves iPXE binaries and scripts")
+Container(hegel, "Hegel", "Go, gRPC, HTTP", $descr="Provides metadata for Hardware")
+Container(rufio, "Rufio", "Go", $descr="Kubernetes controller for interacting with BMCs")
+
+' Rufio
+Rel(rufio, bmc, "Sets power states and boot device using", "ipmi/redfish")
+
+' Tink Worker
+Rel_Up(tinkWorker, tinkServer, "retrieves provisioning manifest from, updates provisioning status using", "gRPC")
+Rel_Down(tinkWorker, containerRegistry, "Gets workflow action images from", "HTTPS")
+
+' Hegel
+Rel_Up(os, hegel, "Reads metadata from", "http")
+
+' Boots
+BiRel_Up(hook, boots, "DHCP message exchange", "udp")
+BiRel_Down(nic, boots, "DHCP message exchange and read iPXE binary and script from", "udp,tftp,http")
+BiRel_Up(os, boots, "DHCP message exchange", "udp")
+
+' External
+Rel_Down(nic, fileServer, "Gets Hook kernel/initramfs and raw OS image from", "HTTPS")
+
+SHOW_LEGEND()
+
+@enduml
