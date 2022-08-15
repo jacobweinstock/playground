@@ -25,8 +25,8 @@ Rel_Up(machine, tinkerbell, "Reads provisioning manifest from, writes provisioni
 Rel_Up(machine, tinkerbell, "reads metadata from", "http")
 BiRel_Up(machine, tinkerbell, "DHCP message exchange and read iPXE binary and script from", "udp")
 
-Rel_Down(machine, fileServer, "Gets Hook kernel/initramfs and raw OS image from", "HTTPS")
-Rel_Down(machine, containerRegistry, "Read workflow action images from", "HTTPS")
+Rel_Down(machine, fileServer, "Reads Hook kernel/initramfs and raw OS image from", "HTTPS")
+Rel_Down(machine, containerRegistry, "Reads workflow action images from", "HTTPS")
 
 SHOW_LEGEND()
 

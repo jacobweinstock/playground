@@ -1,0 +1,33 @@
+@startuml Tinkerbell
+
+CAPT -> Kubernetes: Create hardware CR
+CAPT -> Kubernetes: Create template CR
+
+CAPT -> Kubernetes: Create machine.bmc CR
+CAPT -> Kubernetes: Create job.bmc
+Rufio -> BMC: Set next boot device
+CAPT -> Kubernetes: Create job.bmc
+Rufio -> BMC: Power Off machine
+CAPT -> Kubernetes: Create workflow CR
+"Tink Controller" -> Kubernetes: Update workflow with template data
+CAPT -> Kubernetes: Create job.bmc
+Rufio -> BMC: Power On machine
+Machine -> Boots: Netboot request
+Boots -> Machine: Netboot response
+Machine -> Boots: Download iPXE binary
+Machine -> Boots: Netboot request
+Boots -> Machine: Netboot response
+Machine -> Boots: Download iPXE script
+Machine -> S3: Download Hook OS
+Machine -> ECR: Download Tink Worker
+"Tink Worker" -> "Tink Server": Get workflow
+"Tink Worker" -> ECR: Download container images
+Workflow -> ECR: Download raw OS image
+Machine -> Boots: DHCP request
+Boots -> Machine: DHCP response
+Machine -> Hegel: Get metadata
+
+
+
+
+@enduml
