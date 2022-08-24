@@ -1,0 +1,24 @@
+namespace: tink-system
+createNamespace: true
+hegel:
+  deploy: true
+  name: hegel
+  image: quay.io/tinkerbell/hegel:latest
+  imagePullPolicy: IfNotPresent
+  replicas: 1
+  port:
+    hostPortEnabled: false
+    hostPort: 50061
+  args: ["--grpc-use-tls=false"]
+  resources:
+    limits:
+      cpu: 500m
+      memory: 128Mi
+    requests:
+      cpu: 10m
+      memory: 64Mi
+  roleName: hegel-role
+  roleBindingName: hegel-rolebinding
+  env:
+  - name: TRUSTED_PROXIES
+    value: 192.168.0.0/16

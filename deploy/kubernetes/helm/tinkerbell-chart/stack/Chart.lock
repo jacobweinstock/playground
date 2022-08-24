@@ -1,0 +1,18 @@
+dependencies:
+- name: tink
+  repository: file://../tink
+  version: 0.1.0
+- name: boots
+  repository: file://../boots
+  version: 0.1.0
+- name: rufio
+  repository: file://../rufio
+  version: 0.1.0
+- name: hegel
+  repository: file://../hegel
+  version: 0.1.0
+- name: extensions
+  repository: file://../extensions
+  version: 0.1.0
+digest: sha256:2c396ce0820bd25c84202cc0eb4dfe0d8dedcfdd1990c9e2fcb216482110fc63
+generated: "2022-08-23T21:33:38.322812347-06:00"

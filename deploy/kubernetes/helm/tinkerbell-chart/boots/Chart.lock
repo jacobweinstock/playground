@@ -1,0 +1,6 @@
+dependencies:
+- name: tink
+  repository: file://../tink
+  version: 0.1.0
+digest: sha256:ebec13404d73fc0b1493098473fabd399ac1d3a673ddba4b2b8d601d9949e390
+generated: "2022-08-23T17:42:09.37234-06:00"

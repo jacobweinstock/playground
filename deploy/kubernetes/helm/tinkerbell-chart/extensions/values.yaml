@@ -1,0 +1,16 @@
+loadBalancer:
+  enabled: false
+  ip: 192.168.2.101
+  class: kube-vip.io/kube-vip-class
+
+envoy:
+  name: envoy
+  image: envoyproxy/envoy:v1.22.5
+  imagePullPolicy: IfNotPresent
+
+kubevip:
+  name: kube-vip
+  image: ghcr.io/kube-vip/kube-vip:v0.5.0
+  imagePullPolicy: IfNotPresent
+  roleName: kube-vip-role
+  roleBindingName: kube-vip-rolebinding
