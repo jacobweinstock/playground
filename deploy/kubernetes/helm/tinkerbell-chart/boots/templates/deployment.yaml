@@ -11,10 +11,12 @@ spec:
   selector:
     matchLabels:
       app: {{ .Values.boots.name }}
+      stack: tinkerbell
   template:
     metadata:
       labels:
         app: {{ .Values.boots.name }}
+        stack: tinkerbell
     spec:
       containers:
         - image: {{ .Values.boots.image }}
@@ -32,6 +34,14 @@ spec:
               value: {{ $env.value | quote }}
             {{- end }}
           {{- end }}
+          {{- if not .Values.boots.hostNetwork }}
+          ports:
+            {{- range .Values.boots.ports }}
+            - containerPort: {{ .targetPort }}
+              name: {{ .name }}
+              protocol: {{ .protocol }}
+            {{- end }}
+          {{- end }}
           name: {{ .Values.boots.name }}
           resources:
             limits:
@@ -41,5 +51,7 @@ spec:
               cpu: {{ .Values.boots.resources.requests.cpu }}
               memory: {{ .Values.boots.resources.requests.memory }}
       serviceAccountName: {{ .Values.boots.name }}
+      {{- if .Values.boots.hostNetwork }}
       hostNetwork: true
+      {{- end }}
 {{- end }}

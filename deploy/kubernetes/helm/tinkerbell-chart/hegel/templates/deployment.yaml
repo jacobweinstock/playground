@@ -11,14 +11,23 @@ spec:
   selector:
     matchLabels:
       app: {{ .Values.hegel.name }}
+      stack: tinkerbell
+      {{- with .Values.hegel.selector }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
   template:
     metadata:
       labels:
         app: {{ .Values.hegel.name }}
+        stack: tinkerbell
+        {{- with .Values.hegel.selector }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
       containers:
         - args:
           - --data-model=kubernetes
+          - --http-port={{ .Values.hegel.deployment.port }}
           {{- range .Values.hegel.args }}
           - {{ . }}
           {{- end }}
@@ -30,12 +39,9 @@ spec:
           image: {{ .Values.hegel.image }}
           imagePullPolicy: {{ .Values.hegel.imagePullPolicy }}
           name: {{ .Values.hegel.name }}
-          {{- if .Values.hegel.port.hostPortEnabled }}
           ports:
-            - containerPort: {{ .Values.hegel.port.hostPort }}
-              hostPort: {{ .Values.hegel.port.hostPort }}
-              name: http
-          {{- end }}
+            - containerPort: {{ .Values.hegel.deployment.port }}
+              name: {{ .Values.hegel.deployment.portName }}
           resources:
             limits:
               cpu: {{ .Values.hegel.resources.limits.cpu }}

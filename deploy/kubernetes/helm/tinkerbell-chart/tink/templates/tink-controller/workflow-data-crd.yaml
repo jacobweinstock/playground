@@ -5,28 +5,21 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.8.0
   creationTimestamp: null
-  name: workflows.tinkerbell.org
+  name: workflowdata.tinkerbell.org
 spec:
   group: tinkerbell.org
   names:
     categories:
       - tinkerbell
-    kind: Workflow
-    listKind: WorkflowList
-    plural: workflows
+    kind: WorkflowData
+    listKind: WorkflowDataList
+    plural: workflowdata
     shortNames:
-      - wf
-    singular: workflow
+      - wfdata
+    singular: workflowdata
   scope: Namespaced
   versions:
-    - additionalPrinterColumns:
-        - jsonPath: .spec.templateRef
-          name: Template
-          type: string
-        - jsonPath: .status.state
-          name: State
-          type: string
-      name: v1alpha1
+    - name: v1alpha1
       schema:
         openAPIV3Schema:
           description: Workflow is the Schema for the Workflows API.

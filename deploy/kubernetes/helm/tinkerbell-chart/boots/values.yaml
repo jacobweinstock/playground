@@ -1,7 +1,8 @@
 namespace: tink-system
-createNamespace: true
+createNamespace: false
 boots:
   deploy: true
+  hostNetwork: true
   name: boots
   image: quay.io/tinkerbell/boots:latest
   imagePullPolicy: IfNotPresent
@@ -16,6 +17,23 @@ boots:
       memory: 64Mi
   roleName: boots-role
   roleBindingName: boots-rolebinding
+  ports:
+  - name: boots-dhcp
+    port: 67
+    protocol: UDP
+    targetPort: 67
+  - name: boots-http
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  - name: boots-syslog
+    port: 514
+    protocol: UDP
+    targetPort: 514
+  - name: boots-tftp
+    port: 69
+    protocol: UDP
+    targetPort: 69
   env:
   - name: DATA_MODEL_VERSION
     value: "kubernetes"

@@ -1,8 +1,29 @@
 namespace: tink-system
 createNamespace: true
 
+# service for the stack
+service:
+  enabled: true
+  name: tink-stack
+  selector:
+    lbtype: external
+  ip: 192.168.2.111
+  lbClass: kube-vip.io/kube-vip-class
+
+kubevip:
+  enabled: true
+  name: kube-vip
+  image: ghcr.io/kube-vip/kube-vip:v0.5.0
+  imagePullPolicy: IfNotPresent
+  roleName: kube-vip-role
+  roleBindingName: kube-vip-rolebinding
+  interface: enp0s8
+
 tink:
   namespace: tink-system
+  tinkServer:
+    selector:
+      lbtype: external
 
 boots:
   namespace: tink-system
@@ -17,23 +38,28 @@ boots:
     - name: MIRROR_BASE_URL
       value: http://192.168.2.150:8080
     - name: PUBLIC_IP
-      value: 192.168.2.150
+      value: 192.168.2.111
     - name: PUBLIC_SYSLOG_FQDN
-      value: 192.168.2.150
+      value: 192.168.2.111
     - name: SYSLOG_BIND
-      value: 0.0.0.0:514
+      value: :514
     - name: TINKERBELL_GRPC_AUTHORITY
-      value: 192.168.2.150:42113
+      value: 192.168.2.111:42113
     - name: TINKERBELL_TLS
       value: "false"
+    - name: BOOTS_LOG_LEVEL
+      value: "debug"
+    - name: BOOTS_EXTRA_KERNEL_ARGS
+      value: "tink_worker_image=quay.io/tinkerbell/tink-worker:latest"
+    hostNetwork: false
+
 
 hegel:
   namespace: tink-system
+  hegel:
+    selector:
+      lbtype: external
 
 rufio:
   namespace: tink-system
 
-extensions:
-  loadBalancer:
-    enabled: true
-    ip: 192.168.2.101

@@ -11,8 +11,5 @@ dependencies:
 - name: hegel
   repository: file://../hegel
   version: 0.1.0
-- name: extensions
-  repository: file://../extensions
-  version: 0.1.0
-digest: sha256:2c396ce0820bd25c84202cc0eb4dfe0d8dedcfdd1990c9e2fcb216482110fc63
-generated: "2022-08-23T21:33:38.322812347-06:00"
+digest: sha256:a42886438a5514a029a8d3e0aa6a0fe97336df3f5717435df82a9f37f0479e37
+generated: "2022-08-25T21:03:11.712396749-06:00"

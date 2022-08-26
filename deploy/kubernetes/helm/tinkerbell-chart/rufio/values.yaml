@@ -1,5 +1,5 @@
 namespace: tink-system
-createNamespace: true
+createNamespace: false
 rufio:
   deploy: true
   name: rufio-controller-manager

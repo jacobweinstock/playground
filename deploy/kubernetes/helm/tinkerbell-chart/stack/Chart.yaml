@@ -27,15 +27,21 @@ dependencies:
 - name: tink
   version: "0.1.0"
   repository: "file://../tink"
+  import-values:
+  - child: tinkServer
+    parent: tinkData
 - name: boots
   version: "0.1.0"
   repository: "file://../boots"
+  import-values:
+  - child: boots
+    parent: bootsData
 - name: rufio
   version: "0.1.0"
   repository: "file://../rufio"
 - name: hegel
   version: "0.1.0"
   repository: "file://../hegel"
-- name: extensions
-  version: "0.1.0"
-  repository: "file://../extensions"
+  import-values:
+  - child: hegel
+    parent: hegelData

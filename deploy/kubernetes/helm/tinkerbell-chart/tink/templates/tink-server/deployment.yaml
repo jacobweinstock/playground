@@ -11,10 +11,18 @@ spec:
   selector:
     matchLabels:
       app: {{ .Values.tinkServer.name }}
+      stack: tinkerbell
+      {{- with .Values.tinkServer.selector }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
   template:
     metadata:
       labels:
         app: {{ .Values.tinkServer.name }}
+        stack: tinkerbell
+        {{- with .Values.tinkServer.selector }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
       containers:
         - args:
@@ -25,12 +33,9 @@ spec:
           image: {{ .Values.tinkServer.image }}
           imagePullPolicy: {{ .Values.tinkServer.imagePullPolicy }}
           name: server
-          {{- if .Values.tinkServer.port.hostPortEnabled }}
           ports:
-            - containerPort: {{ .Values.tinkServer.port.hostPort }}
-              hostPort: {{ .Values.tinkServer.port.hostPort }}
-              name: grpc
-          {{- end }}
+            - containerPort: {{ .Values.tinkServer.deployment.port }}
+              name: {{ .Values.tinkServer.deployment.portName }}
           resources:
             limits:
               cpu: {{ .Values.tinkServer.resources.limits.cpu }}

@@ -9,9 +9,9 @@ metadata:
 spec:
   clusterIP: None
   ports:
-  - port: {{ .Values.tinkServer.port.hostPort }}
+  - port: {{ .Values.tinkServer.service.port }}
     protocol: TCP
-    targetPort: {{ .Values.tinkServer.port.hostPort }}
+    targetPort: {{ .Values.tinkServer.deployment.portName }}
   selector:
     app: {{ .Values.tinkServer.name }}
 {{- end -}}

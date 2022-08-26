@@ -9,9 +9,9 @@ metadata:
 spec:
   clusterIP: None
   ports:
-  - port: {{ .Values.hegel.port.hostPort }}
+  - port: {{ .Values.hegel.service.port }}
     protocol: TCP
-    targetPort: {{ .Values.hegel.port.hostPort }}
+    targetPort: {{ .Values.hegel.deployment.portName }}
   selector:
     app: {{ .Values.hegel.name }}
 {{- end -}}
