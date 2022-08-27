@@ -1,17 +1,25 @@
-{{- if and .Values.service.enabled (not .Values.boots.boots.hostNetwork) -}}
+{{- if .Values.service.enabled -}}
 apiVersion: v1
 kind: Service
 metadata:
   labels:
-    app: boots-external-lb
-  name: boots-external-lb
+    app: stack-external-lb
+  name: stack-external-lb
   namespace: {{ .Values.namespace }}
 spec:
   type: LoadBalancer
   loadBalancerClass: {{ .Values.service.lbClass }}
-  loadBalancerIP: {{ .Values.service.boots.ip }}
+  loadBalancerIP: {{ .Values.service.ip }}
   externalTrafficPolicy: Local
   ports:
+  - name: {{ .Values.hegelData.name }}
+    port: {{ .Values.hegelData.deployment.port }}
+    protocol: TCP
+    targetPort: {{ .Values.hegelData.deployment.portName }}
+  - name: {{ .Values.tinkData.name }}
+    port: {{ .Values.tinkData.deployment.port }}
+    protocol: TCP
+    targetPort: {{ .Values.tinkData.deployment.portName }}
   {{- range .Values.bootsData.ports }}
   - name: {{ .name }}
     port: {{ .port }}
@@ -19,5 +27,5 @@ spec:
     protocol: {{ .protocol }}
   {{- end }}
   selector:
-    app: boots
+    app: stack
 {{- end -}}

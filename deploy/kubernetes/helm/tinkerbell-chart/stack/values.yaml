@@ -7,19 +7,7 @@ service:
   name: tink-stack
   selector:
     lbtype: external
-  udp:
-    selector:
-      lbUDP: external
-  tcp:
-    selector:
-      lbTPC: external
-  boots:
-    ip: 192.168.2.111
-  hegel:
-    ip: 192.168.2.112
-  tinkServer:
-    ip: 192.168.2.113
-  ip: 192.168.2.111
+  ip: 192.168.1.112
   lbClass: kube-vip.io/kube-vip-class
 
 kubevip:
@@ -33,10 +21,6 @@ kubevip:
 
 tink:
   namespace: tink-system
-  tinkServer:
-    selector:
-      lbTCP: external
-      lbtype: external
 
 boots:
   namespace: tink-system
@@ -65,18 +49,10 @@ boots:
     - name: BOOTS_EXTRA_KERNEL_ARGS
       value: "tink_worker_image=quay.io/tinkerbell/tink-worker:latest"
     hostNetwork: false
-    selector:
-      lbUDP: external
-      lbTCP: external
-      lbtype: external
 
 
 hegel:
   namespace: tink-system
-  hegel:
-    selector:
-      lbTCP: external
-      lbtype: external
 
 rufio:
   namespace: tink-system

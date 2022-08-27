@@ -1,0 +1,133 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-conf
+  namespace: tink-system
+data:
+  nginx.conf: |
+    worker_processes 1;
+    events {
+        worker_connections  1024;
+    }
+    
+    stream {
+      log_format logger-json escape=json '{"source": "nginx", "time": $msec, "address": "$remote_addr", "status": $status, "upstream_addr": "$upstream_addr"}';
+      upstream hegel {
+        server hegel:50061;
+      }
+      upstream tink {
+        server tink-server:42113;
+      }
+      upstream boots_http {
+        server boots:80;
+      }
+      upstream boots_dhcp {
+        server boots:67;
+      }
+      upstream boots_tftp {
+        server boots:69;
+      }
+      upstream boots_syslog {
+        server boots:514;
+      }
+      server {
+          listen 50061;
+          proxy_pass hegel;
+          proxy_timeout 1s;
+          access_log /dev/stdout logger-json;
+          
+      }
+      server {
+          listen 42113;
+          proxy_pass tink;
+          proxy_timeout 1s;
+          access_log /dev/stdout logger-json;
+          
+      }
+      server {
+          listen 80;
+          proxy_pass boots_http;
+          proxy_timeout 1s;
+          access_log /dev/stdout logger-json;
+          
+      }
+      server {
+          listen 67 udp;
+          proxy_pass boots_dhcp;
+          proxy_timeout 1s;
+          access_log /dev/stdout logger-json;
+          
+      }
+      server {
+          listen 69 udp;
+          proxy_pass boots_tftp;
+          proxy_timeout 1s;
+          access_log /dev/stdout logger-json;
+          
+      }
+      server {
+          listen 514 udp;
+          proxy_pass boots_syslog;
+          proxy_timeout 1s;
+          access_log /dev/stdout logger-json;
+          
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tink-stack
+  namespace: tink-system
+spec:
+  selector:
+    matchLabels:
+      app: stack
+      lbtype: external
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: stack
+        lbtype: external
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.23.1
+        ports:
+        - containerPort: 80
+          name: boots-http
+          protocol: TCP
+        - containerPort: 50061
+          name: hegel-http
+        - containerPort: 42113
+          protocol: TCP
+          name: tink-grpc
+        - containerPort: 67
+          name: boots-dhcp
+          protocol: UDP
+        - containerPort: 69
+          name: boots-tftp
+          protocol: UDP
+        - containerPort: 514
+          name: boots-syslog
+          protocol: UDP
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
+        volumeMounts:
+        - mountPath: /etc/nginx
+          readOnly: true
+          name: nginx-conf
+      volumes:
+      - name: nginx-conf
+        configMap:
+          name: nginx-conf
+          items:
+            - key: nginx.conf
+              path: nginx.conf
+
