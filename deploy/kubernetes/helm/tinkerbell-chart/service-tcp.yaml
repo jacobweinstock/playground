@@ -4,7 +4,7 @@ kind: Service
 metadata:
   labels:
     app: {{ .Values.service.name }}
-  name: {{ .Values.service.name }}
+  name: {{ .Values.service.name }}-tcp
   namespace: {{ .Values.namespace }}
 spec:
   type: LoadBalancer
@@ -21,10 +21,17 @@ spec:
     protocol: TCP
     targetPort: {{ .Values.hegelData.deployment.portName }}
   {{- if not .Values.boots.boots.hostNetwork }}
-  {{- toYaml .Values.bootsData.ports | nindent 2 }}
+  {{- range .Values.bootsData.ports }}
+  {{- if eq .protocol "TCP" }}
+  - name: {{ .name }}
+    port: {{ .port }}
+    targetPort: {{ .port }}
+    protocol: {{ .protocol }}
+  {{- end }}
+  {{- end }}
   {{- end }}
   selector:
-    {{- with .Values.service.selector }}
+    {{- with .Values.service.tcp.selector }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
 {{- end -}}

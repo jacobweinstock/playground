@@ -12,11 +12,17 @@ spec:
     matchLabels:
       app: {{ .Values.boots.name }}
       stack: tinkerbell
+      {{- with .Values.boots.selector }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
   template:
     metadata:
       labels:
         app: {{ .Values.boots.name }}
         stack: tinkerbell
+        {{- with .Values.boots.selector }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
       containers:
         - image: {{ .Values.boots.image }}

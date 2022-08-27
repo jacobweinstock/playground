@@ -1,0 +1,23 @@
+{{- if and .Values.service.enabled (not .Values.boots.boots.hostNetwork) -}}
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: boots-external-lb
+  name: boots-external-lb
+  namespace: {{ .Values.namespace }}
+spec:
+  type: LoadBalancer
+  loadBalancerClass: {{ .Values.service.lbClass }}
+  loadBalancerIP: {{ .Values.service.boots.ip }}
+  externalTrafficPolicy: Local
+  ports:
+  {{- range .Values.bootsData.ports }}
+  - name: {{ .name }}
+    port: {{ .port }}
+    targetPort: {{ .targetPort }}
+    protocol: {{ .protocol }}
+  {{- end }}
+  selector:
+    app: boots
+{{- end -}}

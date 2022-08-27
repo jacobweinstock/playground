@@ -7,6 +7,18 @@ service:
   name: tink-stack
   selector:
     lbtype: external
+  udp:
+    selector:
+      lbUDP: external
+  tcp:
+    selector:
+      lbTPC: external
+  boots:
+    ip: 192.168.2.111
+  hegel:
+    ip: 192.168.2.112
+  tinkServer:
+    ip: 192.168.2.113
   ip: 192.168.2.111
   lbClass: kube-vip.io/kube-vip-class
 
@@ -23,6 +35,7 @@ tink:
   namespace: tink-system
   tinkServer:
     selector:
+      lbTCP: external
       lbtype: external
 
 boots:
@@ -44,7 +57,7 @@ boots:
     - name: SYSLOG_BIND
       value: :514
     - name: TINKERBELL_GRPC_AUTHORITY
-      value: 192.168.2.111:42113
+      value: 192.168.2.113:42113
     - name: TINKERBELL_TLS
       value: "false"
     - name: BOOTS_LOG_LEVEL
@@ -52,12 +65,17 @@ boots:
     - name: BOOTS_EXTRA_KERNEL_ARGS
       value: "tink_worker_image=quay.io/tinkerbell/tink-worker:latest"
     hostNetwork: false
+    selector:
+      lbUDP: external
+      lbTCP: external
+      lbtype: external
 
 
 hegel:
   namespace: tink-system
   hegel:
     selector:
+      lbTCP: external
       lbtype: external
 
 rufio:
