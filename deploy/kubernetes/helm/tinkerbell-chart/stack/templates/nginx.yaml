@@ -9,7 +9,7 @@ data:
     events {
         worker_connections  1024;
     }
-    
+    user root;
     stream {
       log_format logger-json escape=json '{"source": "nginx", "time": $msec, "address": "$remote_addr", "status": $status, "upstream_addr": "$upstream_addr"}';
       upstream hegel {
@@ -47,6 +47,7 @@ data:
       server {
           listen 80;
           proxy_pass boots_http;
+          proxy_protocol on;
           proxy_timeout 1s;
           access_log /dev/stdout logger-json;
           
@@ -54,7 +55,9 @@ data:
       server {
           listen 67 udp;
           proxy_pass boots_dhcp;
-          proxy_timeout 1s;
+          proxy_bind $remote_addr:$remote_port transparent;
+          proxy_responses 0;
+
           access_log /dev/stdout logger-json;
           
       }
@@ -99,10 +102,10 @@ spec:
           name: boots-http
           protocol: TCP
         - containerPort: 50061
-          name: hegel-http
+          name: hegel
         - containerPort: 42113
           protocol: TCP
-          name: tink-grpc
+          name: tink-server
         - containerPort: 67
           name: boots-dhcp
           protocol: UDP

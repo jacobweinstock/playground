@@ -7,7 +7,7 @@ service:
   name: tink-stack
   selector:
     lbtype: external
-  ip: 192.168.1.112
+  ip: 192.168.2.111
   lbClass: kube-vip.io/kube-vip-class
 
 kubevip:
@@ -17,7 +17,7 @@ kubevip:
   imagePullPolicy: IfNotPresent
   roleName: kube-vip-role
   roleBindingName: kube-vip-rolebinding
-  interface: enp0s8
+  interface: enp0s9
 
 tink:
   namespace: tink-system
