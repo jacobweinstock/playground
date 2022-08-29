@@ -17,7 +17,7 @@ kubevip:
   imagePullPolicy: IfNotPresent
   roleName: kube-vip-role
   roleBindingName: kube-vip-rolebinding
-  interface: enp0s9
+  interface: enp0s8
 
 tink:
   namespace: tink-system
@@ -48,11 +48,17 @@ boots:
       value: "debug"
     - name: BOOTS_EXTRA_KERNEL_ARGS
       value: "tink_worker_image=quay.io/tinkerbell/tink-worker:latest"
+    - name: TRUSTED_PROXIES
+      value: 10.42.0.68/24
     hostNetwork: false
 
 
 hegel:
   namespace: tink-system
+  hegel:
+    env:
+    - name: TRUSTED_PROXIES
+      value: 10.42.0.0/24
 
 rufio:
   namespace: tink-system
