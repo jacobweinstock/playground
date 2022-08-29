@@ -17,6 +17,7 @@ data:
         location / {
           proxy_set_header X-Real-IP $remote_addr;
           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          resolver kube-dns.kube-system valid=10s;
 
           proxy_pass http://boots;
         }
@@ -27,6 +28,7 @@ data:
         location / {
           proxy_set_header X-Real-IP $remote_addr;
           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          resolver kube-dns.kube-system valid=10s;
 
           proxy_pass http://hegel:50061;
         }
@@ -37,6 +39,7 @@ data:
         location / {
           proxy_set_header X-Real-IP $remote_addr;
           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          resolver kube-dns.kube-system valid=10s;
 
           grpc_pass grpc://tink-server:42113;
         }
@@ -49,25 +52,25 @@ data:
       server {
           listen 67 udp;
           proxy_pass boots:67;
+          resolver kube-dns.kube-system valid=10s;
           proxy_bind $remote_addr:$remote_port transparent;
           proxy_responses 0;
-
           access_log /dev/stdout logger-json;
-          
       }
       server {
           listen 69 udp;
           proxy_pass boots:69;
+          resolver kube-dns.kube-system valid=10s;
           proxy_timeout 1s;
           access_log /dev/stdout logger-json;
-          
       }
       server {
           listen 514 udp;
           proxy_pass boots:514;
-          proxy_timeout 1s;
+          resolver kube-dns.kube-system valid=10s;
+          proxy_bind $remote_addr:$remote_port transparent;
+          proxy_responses 0;
           access_log /dev/stdout logger-json;
-          
       }
     }
 ---
