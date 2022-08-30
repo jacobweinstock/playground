@@ -41,7 +41,7 @@ boots:
     - name: SYSLOG_BIND
       value: :514
     - name: TINKERBELL_GRPC_AUTHORITY
-      value: 192.168.2.113:42113
+      value: 192.168.2.111:42113
     - name: TINKERBELL_TLS
       value: "false"
     - name: BOOTS_LOG_LEVEL
