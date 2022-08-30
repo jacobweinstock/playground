@@ -17,7 +17,7 @@ kubevip:
   imagePullPolicy: IfNotPresent
   roleName: kube-vip-role
   roleBindingName: kube-vip-rolebinding
-  interface: enp0s8
+  interface: enp0s9
 
 tink:
   namespace: tink-system

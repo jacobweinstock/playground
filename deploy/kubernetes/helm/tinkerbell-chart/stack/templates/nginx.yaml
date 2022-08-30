@@ -17,8 +17,8 @@ data:
         location / {
           proxy_set_header X-Real-IP $remote_addr;
           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-          resolver kube-dns.kube-system.svc.cluster.local;
-          set $boots_dns boots; # needed in Kubernetes for dynamic DNS resolution
+          resolver 10.43.0.10;
+          set $boots_dns boots.tink-system.svc.cluster.local; # needed in Kubernetes for dynamic DNS resolution
 
           proxy_pass http://$boots_dns;
         }
@@ -29,8 +29,8 @@ data:
         location / {
           proxy_set_header X-Real-IP $remote_addr;
           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-          resolver kube-dns.kube-system.svc.cluster.local;
-          set $hegel_dns hegel; # needed in Kubernetes for dynamic DNS resolution
+          resolver 10.43.0.10;
+          set $hegel_dns hegel.tink-system.svc.cluster.local; # needed in Kubernetes for dynamic DNS resolution
 
           proxy_pass http://$hegel_dns:50061;
         }
@@ -41,8 +41,8 @@ data:
         location / {
           proxy_set_header X-Real-IP $remote_addr;
           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-          resolver kube-dns.kube-system.svc.cluster.local;
-          set $tink_dns tink-server; # needed in Kubernetes for dynamic DNS resolution
+          resolver 10.43.0.10;
+          set $tink_dns tink-server.tink-system.svc.cluster.local; # needed in Kubernetes for dynamic DNS resolution
 
           grpc_pass grpc://$tink_dns:42113;
         }
@@ -54,8 +54,8 @@ data:
 
       server {
           listen 67 udp;
-          resolver kube-dns.kube-system.svc.cluster.local;
-          set $boots_dns boots; # needed in Kubernetes for dynamic DNS resolution
+          resolver 10.43.0.10; # needed in Kubernetes for dynamic DNS resolution
+          set $boots_dns boots.tink-system.svc.cluster.local; # needed in Kubernetes for dynamic DNS resolution
           proxy_pass $boots_dns:67;
           proxy_bind $remote_addr:$remote_port transparent;
           proxy_responses 0;
@@ -63,16 +63,16 @@ data:
       }
       server {
           listen 69 udp;
-          resolver kube-dns.kube-system.svc.cluster.local;
-          set $boots_dns boots; # needed in Kubernetes for dynamic DNS resolution
+          resolver 10.43.0.10;
+          set $boots_dns boots.tink-system.svc.cluster.local; # needed in Kubernetes for dynamic DNS resolution
           proxy_pass $boots_dns:69;
           proxy_timeout 1s;
           access_log /dev/stdout logger-json;
       }
       server {
           listen 514 udp;
-          resolver kube-dns.kube-system.svc.cluster.local;
-          set $boots_dns boots; # needed in Kubernetes for dynamic DNS resolution
+          resolver 10.43.0.10;
+          set $boots_dns boots.tink-system.svc.cluster.local; # needed in Kubernetes for dynamic DNS resolution
           proxy_pass $boots_dns:514;
           proxy_bind $remote_addr:$remote_port transparent;
           proxy_responses 0;
@@ -136,5 +136,7 @@ spec:
           items:
             - key: nginx.conf
               path: nginx.conf
+
+
 
 
