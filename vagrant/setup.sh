@@ -4,7 +4,7 @@ install_docker() {
 	curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 	add-apt-repository "deb https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
 	update_apt
-	apt-get install --no-install-recommends containerd.io docker-ce docker-ce-cli
+	apt-get install --no-install-recommends containerd.io docker-ce docker-ce-cli dnsmasq
 	gpasswd -a vagrant docker
 }
 
@@ -81,7 +81,20 @@ helm_install_tink_stack() {
 		--set "stack.kubevip.interface=$interface" \
 		--set "stack.relay.sourceInterface=$interface" \
 		--set "stack.loadBalancerIP=$loadbalancer_ip" \
-		--set "smee.publicIP=$loadbalancer_ip"
+		--set "smee.publicIP=$loadbalancer_ip" \
+		--set "smee.additionalEnv[0].name=SMEE_DHCP_MODE,smee.additionalEnv[0].value=proxy"
+}
+
+configure_dnsmasq() {
+	cat <<-EOF >/etc/dnsmasq.conf
+	dhcp-range=192.168.56.10,192.168.56.20,255.255.255.0,12h
+	#dhcp-option=option:router,172.31.0.1
+	dhcp-option=option:dns-server,1.1.1.1
+	dhcp-authoritative
+	port=0
+	dhcp-host=08:00:27:9e:f5:3a,machine1,192.168.56.55
+	EOF
+	systemctl restart dnsmasq
 }
 
 apply_manifests() {
@@ -142,6 +155,7 @@ main() {
 
 	update_apt
 	install_docker
+	configure_dnsmasq
 	# https://github.com/ipxe/ipxe/pull/863
 	# Needed after iPXE increased the default TCP window size to 2MB.
 	sudo ethtool -K eth1 tx off sg off tso off
