@@ -1,5 +1,16 @@
 #!/bin/bash
 
+# join_paths will take all inputs and join them with a / separator.
+# it will remove any duplicate / characters.
+# Example:
+# join_paths /playground/stack ubuntu-download.yaml
+# will return '/playground/stack/ubuntu-download.yaml'
+# join_paths /playground/stack ubuntu-download.yaml
+# will return '/playground/stack/ubuntu-download.yaml'
+join_paths() {
+    (IFS=/; echo "$*" | tr -s /)
+}
+
 install_docker() {
 	curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 	add-apt-repository "deb https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
@@ -53,6 +64,7 @@ start_k3d() {
 	mkdir -p ~/.kube/
 	k3d kubeconfig get -a >~/.kube/config
 	until kubectl wait --for=condition=Ready nodes --all --timeout=600s; do sleep 1; done
+	until kubectl wait --timeout=5m node/k3d-k3s-default-server-0 --for=jsonpath='{.spec.podCIDR}'="10.42.0.0/24"; do sleep 1; done
 }
 
 kubectl_for_vagrant_user() {
@@ -71,7 +83,6 @@ helm_install_tink_stack() {
 	trusted_proxies=""
 	until [ "$trusted_proxies" != "" ]; do
 		trusted_proxies=$(kubectl get nodes -o jsonpath='{.items[*].spec.podCIDR}' | tr ' ' ',')
-		sleep 5
 	done
 	helm install tink-stack oci://ghcr.io/tinkerbell/charts/stack \
 		--version "$version" \
@@ -102,12 +113,13 @@ apply_manifests() {
 	export TINKERBELL_CLIENT_MAC="$worker_mac"
 	export TINKERBELL_HOST_IP="$host_ip"
 
-	for i in "$manifests_dir"/{hardware.yaml,template.yaml,workflow.yaml}; do
-		envsubst <"$i"
+	for i in {hardware.yaml,template.yaml,workflow.yaml}; do
+		v=$(join_paths "$manifests_dir" "$i")
+		envsubst <"$v"
 		echo -e '---'
 	done >/tmp/manifests.yaml
 	kubectl apply -n "$namespace" -f /tmp/manifests.yaml
-	kubectl apply -n "$namespace" -f "$manifests_dir"/ubuntu-download.yaml
+	kubectl apply -n "$namespace" -f "$(join_paths $manifests_dir ubuntu-download.yaml)"
 }
 
 run_helm() {
