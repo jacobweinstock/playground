@@ -1,15 +1,20 @@
-# Throwaway workflow. It answers three questions that decide whether the e2e
-# matrix can run on GitHub-hosted runners at all:
+# Throwaway workflow. It answers the questions that decide whether the e2e
+# matrix can run on GitHub-hosted runners at all. A probe-only run on
+# 2026-09-16 settled two of them:
 #
-#   1. Is /dev/kvm usable? GitHub documents nested virtualization as "not
-#      officially supported ... experimental and done at your own risk", so
-#      this has to be measured rather than assumed.
-#   2. Does it fit in 14 GB? That is the documented disk for a standard runner.
-#   3. How long does one combo take? Nested virt on 4 shared vCPUs is slow, and
-#      the answer sets the timeout for the real workflow.
+#   - /dev/kvm is usable and libvirtd is reachable. virt-host-validate passes
+#     hardware virtualization; the IOMMU, secure-guest and cgroup-devices
+#     warnings do not apply to plain KVM guests. GitHub still documents
+#     nested virtualization as unsupported, so this stays worth re-checking.
+#   - Disk is not the constraint the documented 14 GB suggested: / is 145 GB
+#     with 87 GB free before anything is removed.
 #
-# Every probe runs before the combo and reports rather than failing, so a run
-# that dies still says why. Delete this file once the matrix workflow exists.
+# What remains unmeasured is how long a combination takes under nested virt on
+# 4 shared vCPUs, which is what sets the timeout for the real workflow.
+#
+# Every probe reports rather than failing, and goes to both the log and the job
+# summary, so a run that dies still says why. Delete this file once the matrix
+# workflow exists.
 name: e2e spike
 
 on:
@@ -51,15 +56,22 @@ jobs:
       # Skips `task install-binaries`; the flox environment supplies those tools.
       USE_PATH_BINARIES: "true"
       COMBO: ${{ inputs.combo }}
+      # flox reads any config option from FLOX_<SCREAMING_SNAKE_CASE>, which
+      # outranks both flox.toml files. auth_notifications quiets the FloxHub
+      # login advisory; it does not suppress authentication errors.
+      FLOX_DISABLE_METRICS: "true"
+      FLOX_AUTH_NOTIFICATIONS: "false"
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # tee, not a plain redirect: the summary alone is invisible to anyone
+      # reading the log, which is where a failed run gets diagnosed.
       - name: Baseline resources
         run: |
-          echo "## Baseline" >> "$GITHUB_STEP_SUMMARY"
           {
+            echo "## Baseline"
             echo '```'
             echo "nproc:  $(nproc)"
             free -h
@@ -68,22 +80,8 @@ jobs:
             echo
             echo "virt flags: $(grep -om1 -E 'vmx|svm' /proc/cpuinfo || echo none)"
             echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
           df --output=used -k / | tail -1 > /tmp/disk-baseline
-
-      # The runner image ships toolchains this workflow never uses. Removing
-      # them is what makes the documented 14 GB into something a playground
-      # might fit inside.
-      - name: Reclaim disk
-        run: |
-          before=$(df --output=avail -k / | tail -1)
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
-                      /usr/local/share/boost /usr/local/.ghcup \
-                      /opt/hostedtoolcache/CodeQL || true
-          sudo docker image prune -af || true
-          after=$(df --output=avail -k / | tail -1)
-          echo "reclaimed $(( (after - before) / 1024 )) MiB"
-          df -h /
 
       # libvirtd is a system daemon that wants /dev/kvm, an AppArmor profile and
       # firmware descriptors it reads itself, so it comes from apt rather than
@@ -122,11 +120,13 @@ jobs:
             echo
             virsh -c qemu:///system version 2>&1 || true
             echo
+            # The IOMMU, secure-guest and cgroup-devices warnings are expected
+            # here and irrelevant: no device passthrough, no confidential VMs.
             virt-host-validate qemu 2>&1 | grep -Ev '^\s*$' || true
             echo '```'
             echo "- /dev/kvm usable: **$kvm_ok**"
             echo "- libvirtd reachable: **$libvirt_ok**"
-          } >> "$GITHUB_STEP_SUMMARY"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
           echo "kvm_ok=$kvm_ok" >> "$GITHUB_OUTPUT"
           echo "libvirt_ok=$libvirt_ok" >> "$GITHUB_OUTPUT"
 
@@ -143,7 +143,7 @@ jobs:
       - name: Resolved toolchain
         uses: flox/activate-action@v1
         with:
-          command: cd capt && for b in go task cue helm kind kubectl clusterctl yq virsh virt-install docker qemu-img; do printf "%-14s %s\n" "$b" "$(command -v "$b" || echo MISSING)"; done | tee /tmp/toolchain.txt
+          command: cd capt && for b in go task cue helm kind kubectl clusterctl yq virsh virt-install docker; do printf "%-14s %s\n" "$b" "$(command -v "$b" || echo MISSING)"; done | tee /tmp/toolchain.txt
 
       - name: Record toolchain
         working-directory: .
@@ -153,7 +153,7 @@ jobs:
             echo '```'
             cat /tmp/toolchain.txt
             echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Sample disk usage in the background
         if: ${{ !inputs.probe_only }}
@@ -206,7 +206,7 @@ jobs:
             echo '```'
             df -h /
             echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Upload artifacts
         if: always()
