@@ -50,6 +50,14 @@ tasks:
         sh: "printf '{%s}' \"$(yq eval '.nameServers | join(\",\")' {{.STATE_FILE_FQ_PATH}})\""
       AGENT_IMAGE:
         sh: "yq eval '.agentImage' {{.STATE_FILE_FQ_PATH}}"
+      # Empty unless this playground was built from source. The registry is only
+      # ever reached by the machine, so this is the one address it needs.
+      SOURCE_REGISTRY:
+        sh: 'yq eval ''.source.registry // ""'' {{.STATE_FILE_FQ_PATH}}'
+      # A local image name with no registry in it: it is loaded into kind rather
+      # than pulled.
+      SOURCE_IMAGE:
+        sh: 'yq eval ''.source.tinkerbellImage // ""'' {{.STATE_FILE_FQ_PATH}}'
       GLOBAL_VARS:
         - trustedProxies={"{{.TRUSTED_PROXIES}}"}
         - optional.captainos.enabled=true
@@ -60,6 +68,13 @@ tasks:
         # has no certs.d tree of its own, so unlike every other image it cannot
         # be redirected at pull time and the host has to be in the string.
         - deployment.agentImage={{.AGENT_IMAGE}}
+      # The agent image is handled above for every playground; these two are
+      # only meaningful when there is a local build to point at. The registry
+      # serves plain HTTP, which CaptainOS accepts only for hosts named in
+      # insecure_registries -- it writes them a certs.d entry before pulling.
+      SOURCE_VARS:
+        - deployment.image={{.SOURCE_IMAGE}}
+        - deployment.envs.smee.ipxeHttpScriptExtraKernelArgs={insecure_registries={{.SOURCE_REGISTRY}}}
       IPV4_VARS:
         - publicIP={{.LB_IP}}
         - artifactsFileServer=http://{{.LB_HOST2}}:7173
@@ -108,6 +123,7 @@ tasks:
       - >-
         KUBECONFIG="{{.KUBECONFIG}}" helm upgrade --install {{.CHART_NAME}} {{.LOCATION}} --version "{{.STACK_CHART_VERSION}}" --create-namespace --namespace {{.NAMESPACE}} --wait
         {{range .GLOBAL_VARS}}--set "{{.}}" {{end}}
+        {{- if .SOURCE_REGISTRY }} {{- range .SOURCE_VARS }}--set "{{.}}" {{ end }} {{ end }}
         {{- if eq .IP_FAMILY "ipv6" }} {{- range .IPV6_VARS }}--set "{{.}}" {{ end }} {{ else }} {{- range .IPV4_VARS }}--set "{{.}}" {{ end }} {{ end }}
         {{- if eq .BOOTMODE "netboot" }} {{- range .NETBOOT_VARS }}--set "{{.}}" {{ end }} {{ end }}
         {{- if eq .BOOTMODE "isoboot" }} {{- range .ISO_VARS }}--set "{{.}}" {{ end }} {{ end }}

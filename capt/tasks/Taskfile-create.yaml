@@ -7,6 +7,8 @@ includes:
   mirror: ./Taskfile-mirror.yaml
   helm: ./Taskfile-helm.yaml
   nat64: ./Taskfile-nat64.yaml
+  source: ./Taskfile-source.yaml
+  registry: ./Taskfile-registry.yaml
 
 tasks:
   playground-ordered:
@@ -22,12 +24,22 @@ tasks:
       # None of these needs a cluster: update-state reads the docker network,
       # and the vBMC is reached over that same network.
       - task: update-state
+      # Also state writers, and both no-ops unless the playground is built from
+      # source. registry:update-state records where the machines reach the
+      # registry, which is only knowable once the network exists.
+      - task: registry:ensure
+      - task: registry:update-state
       - task: vbmc:ensure
       - task: vbmc:update-state
       - task: vbmc:allocate-ports
-      # Everything below reads .state.
+      # Everything below reads .state. The build comes first among them because
+      # the chart and the images it produces are what the helm install deploys.
+      - task: source:publish
       - task: kind-cluster
       - task: tinkerbell-kind-cluster
+      # Needs the cluster to exist, and has to precede the helm install that
+      # references the image.
+      - task: source:load-image
       # Must precede the VMs so an RA is already on the wire when they PXE.
       - task: radvd:start
       # Same: the machines get the DNS64 resolver via DHCPv6 and need the

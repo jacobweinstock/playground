@@ -31,7 +31,10 @@ out: {
 	registryMirror: _mirrorCfg
 
 	// helm OCI client direct HTTPS (no containerd in the pull path).
-	chart: location: (mirror.#rewrite & {in: config.chart.location, cfg: _mirrorCfg}).out
+	// _chartLocation, not config, so a chart built from source is what flows
+	// through here; a filesystem path matches no upstream prefix and is left
+	// alone.
+	chart: location: (mirror.#rewrite & {in: _chartLocation, cfg: _mirrorCfg}).out
 
 	// crane inside the oci2disk action container, direct HTTPS.
 	os: registry: (mirror.#rewrite & {in: config.os.registry, cfg: _mirrorCfg}).out

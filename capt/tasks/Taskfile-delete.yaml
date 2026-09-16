@@ -5,6 +5,7 @@ includes:
   nat64: ./Taskfile-nat64.yaml
   network: ./Taskfile-network.yaml
   vbmc: ./Taskfile-vbmc.yaml
+  registry: ./Taskfile-registry.yaml
 
 tasks:
   playground:
@@ -47,6 +48,8 @@ tasks:
       # Before network:delete: docker refuses to remove a network that still
       # has endpoints, and the shared vBMC is attached to this one.
       - task: vbmc:release
+      # Same, for the shared registry when this playground was built from source.
+      - task: registry:release
       - task: radvd:delete
       - task: nat64:delete
       - task: vms
