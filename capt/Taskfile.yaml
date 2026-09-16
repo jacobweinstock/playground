@@ -13,6 +13,7 @@ includes:
   capi-pivot: ./tasks/Taskfile-capi-pivot.yaml
   helm: ./tasks/Taskfile-helm.yaml
   tools: ./tasks/Taskfile-tools.yaml
+  nat64: ./tasks/Taskfile-nat64.yaml
   network: ./tasks/Taskfile-network.yaml
 
 env:
@@ -233,7 +234,7 @@ tasks:
         echo Cilium
         echo "KUBECONFIG={{.WORKLOAD_KUBECONFIG}} cilium install"
         echo or KUBEROUTER
-        echo "KUBECONFIG={{.WORKLOAD_KUBECONFIG}} kubectl apply -f https://raw.githubusercontent.com/cloudnativelabs/kube-router/master/daemonset/kubeadm-kuberouter.yaml"
+        echo "{{.ROOT_DIR}}/scripts/deploy_cni.sh {{.STATE_FILE_FQ_PATH}} {{.WORKLOAD_KUBECONFIG}}"
         echo
         echo 4. Watch and wait for all nodes to join the cluster and be ready:
         echo "KUBECONFIG={{.WORKLOAD_KUBECONFIG}} kubectl get nodes -w"

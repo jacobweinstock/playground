@@ -8,7 +8,6 @@ captainos:
   kernelVersion: "6.18.16"
 chart:
   extraVars:
-    - optional.captainos.enabled=true
     - optional.captainos.image=ghcr.io/tinkerbell/captain/artifacts:v0.0.0-a4be23c
     - deployment.envs.ui.enableAutoLogin=true
   location: "oci://ghcr.io/tinkerbell/charts/tinkerbell"
@@ -19,29 +18,14 @@ counts:
   spares: 1
   workers: 1
 externalTinkerbell: false
+# ipv4 or ipv6. See README, "IPv6 mode".
+ipFamily: ipv4
 namespace: "tinkerbell"
 os:
   # Tag format: <ubuntu version>-<k8s version>-<arch>.gz
   registry: ghcr.io/tinkerbell/cluster-api-provider-tinkerbell/ubuntu
 outputDir: "output"
-# Pull-through OCI registry mirror. When enabled, every image pulled from
-# this directory is routed through `host` (HTTPS, publicly-trusted CA only):
-#   - Host-side image strings (helm chart.location, os.registry,
-#     virtualBMC.image) are rewritten to `<host>/...` in cue/state by
-#     cue/mirror/#rewrite — they reach helm/docker/crane already pointing
-#     at the mirror.
-#   - kind nodes get a rendered `certs.d` tree bind-mounted into each
-#     node at `/etc/containerd/certs.d` via `extraMounts` in the kind
-#     cluster config. The certs.d tree and the kind-config YAML are
-#     rendered by mirror:render-kind-config and consumed by both
-#     kind-cluster and tinkerbell-kind-cluster, which pass the config
-#     via --config only when this block is enabled.
-#   - Workload nodes get the same drop-in via KubeadmConfigSpec.files
-#     (cue/capi/resources.cue + cue/mirror/#cloudInitFiles).
-# Everything else (workflow actions, kube-vip ctr pulls, all helm-chart
-# Pod images including captainos, kubeadm pulls) keeps its original
-# upstream hostname — the containerd mirror redirects at pull time.
-# Default-disabled.
+# Requires a real pull-through mirror. See README, "Registry mirror".
 registryMirror:
   enabled: false
   host: ""
@@ -53,7 +37,7 @@ registryMirror:
     - "docker.io"
 versions:
   capt: v0.7.0
-  chart: v0.23.1-23da0880
+  chart: v0.25.1-733792cc
   kube: v1.35.2
   kubevip: 1.1.2
   os: 2404

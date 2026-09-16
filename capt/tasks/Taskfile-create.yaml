@@ -2,9 +2,11 @@ version: "3"
 
 includes:
   vbmc: ./Taskfile-vbmc.yaml
+  radvd: ./Taskfile-radvd.yaml
   capi: ./Taskfile-capi.yaml
   mirror: ./Taskfile-mirror.yaml
   helm: ./Taskfile-helm.yaml
+  nat64: ./Taskfile-nat64.yaml
 
 tasks:
   playground-ordered:
@@ -14,7 +16,8 @@ tasks:
     cmds:
       # Everything that writes .state runs first, before anything reads it as
       # a fingerprint source. A write that lands afterwards leaves those
-      # readers stale, and the next create redoes them for nothing.
+      # readers stale, and the next create redoes them for nothing -- which
+      # for radvd means restarting it on a playground that was already up.
       #
       # None of these needs a cluster: update-state reads the docker network,
       # and the vBMC is reached over that same network.
@@ -25,6 +28,15 @@ tasks:
       # Everything below reads .state.
       - task: kind-cluster
       - task: tinkerbell-kind-cluster
+      # Must precede the VMs so an RA is already on the wire when they PXE.
+      - task: radvd:start
+      # Same: the machines get the DNS64 resolver via DHCPv6 and need the
+      # NAT64 route to exist the first time they resolve the mirror.
+      - task: nat64:start
+      # Must precede the helm install: IPv6-only pods cannot use the node's
+      # IPv4 resolver, so nothing in-cluster resolves until CoreDNS is
+      # repointed at DNS64.
+      - task: cluster-dns
       - task: deploy-tinkerbell-helm-chart
       - task: hardware-cr
       - task: bmc-machine-cr
@@ -55,12 +67,14 @@ tasks:
     vars:
       ENABLED:
         sh: "yq eval '.registryMirror.enabled // false' {{.STATE_FILE_FQ_PATH}}"
+      IP_FAMILY:
+        sh: "yq eval '.ipFamily // \"ipv4\"' {{.STATE_FILE_FQ_PATH}}"
       CLUSTER_NAME:
         sh: "yq eval '.names.kindCluster' {{.STATE_FILE_FQ_PATH}}"
       KUBECONFIG:
         sh: "yq eval '.kind.kubeconfig' {{.STATE_FILE_FQ_PATH}}"
       KIND_CONFIG: "{{.OUTPUT_DIR}}/kind-config.yaml"
-      KIND_CONFIG_FLAG: '{{if eq .ENABLED "true"}}--config {{.KIND_CONFIG}}{{end}}'
+      KIND_CONFIG_FLAG: '{{if or (eq .ENABLED "true") (eq .IP_FAMILY "ipv6")}}--config {{.KIND_CONFIG}}{{end}}'
     cmds:
       - kind create cluster --name {{.CLUSTER_NAME}} --kubeconfig "{{.KUBECONFIG}}" {{.KIND_CONFIG_FLAG}}
       - until KUBECONFIG="{{.KUBECONFIG}}" kubectl wait --for=condition=ready node --all --timeout=5m; do echo "Waiting for nodes to be ready..."; sleep 1; done
@@ -79,6 +93,8 @@ tasks:
     vars:
       ENABLED:
         sh: "yq eval '.registryMirror.enabled // false' {{.STATE_FILE_FQ_PATH}}"
+      IP_FAMILY:
+        sh: "yq eval '.ipFamily // \"ipv4\"' {{.STATE_FILE_FQ_PATH}}"
       EXTERNAL_TINKERBELL:
         sh: "yq eval '.externalTinkerbell // false' {{.STATE_FILE_FQ_PATH}}"
       TINK_CLUSTER_NAME:
@@ -86,7 +102,7 @@ tasks:
       TINK_KUBECONFIG:
         sh: 'yq eval ''.kind.tinkerbell.kubeconfig // ""'' {{.STATE_FILE_FQ_PATH}}'
       KIND_CONFIG: "{{.OUTPUT_DIR}}/kind-config.yaml"
-      KIND_CONFIG_FLAG: '{{if eq .ENABLED "true"}}--config {{.KIND_CONFIG}}{{end}}'
+      KIND_CONFIG_FLAG: '{{if or (eq .ENABLED "true") (eq .IP_FAMILY "ipv6")}}--config {{.KIND_CONFIG}}{{end}}'
     cmds:
       - kind create cluster --name "{{.TINK_CLUSTER_NAME}}" --kubeconfig "{{.TINK_KUBECONFIG}}" {{.KIND_CONFIG_FLAG}}
       - until KUBECONFIG="{{.TINK_KUBECONFIG}}" kubectl wait --for=condition=ready node --all --timeout=5m; do echo "Waiting for Tinkerbell cluster nodes to be ready..."; sleep 1; done
@@ -97,7 +113,8 @@ tasks:
     run: once
     summary: |
       Re-render .state with the values only the docker network can supply --
-      gateway addresses and its bridge -- via the cue/state package.
+      gateway addresses, the /64 it was allocated, and its bridge -- via the
+      cue/state package.
 
       No dependency on the KinD clusters: every value here comes from
       `docker network inspect`, and the network exists from network:create.
@@ -110,6 +127,12 @@ tasks:
       NET_IPAM: "docker network inspect {{.NETWORK_NAME}} -f '{{`{{json .IPAM.Config}}`}}'"
       GATEWAY_IP:
         sh: "{{.NET_IPAM}} | yq -p json -r '[.[] | select(.Subnet | test(\":\") | not)] | .[0].Gateway // \"\"'"
+      GATEWAY_IP6:
+        sh: "{{.NET_IPAM}} | yq -p json -r '[.[] | select(.Subnet | test(\":\"))] | .[0].Gateway // \"\"'"
+      # The bridge /64 that radvd advertises and that every playground IPv6
+      # address is built from.
+      SUBNET6:
+        sh: "{{.NET_IPAM}} | yq -p json -r '[.[] | select(.Subnet | test(\":\"))] | .[0].Subnet // \"\"'"
       NETWORK_ID:
         sh: "docker network inspect -f '{{`{{.Id}}`}}' {{.NETWORK_NAME}}"
       BRIDGE_NAME: "br-{{substr 0 12 .NETWORK_ID}}"
@@ -117,6 +140,8 @@ tasks:
       - >-
         cue export ./cue/state yaml: {{.CONFIG_FILE_FQ_PATH}} -l 'config:' {{.STATE_TAGS}}
         -t gatewayIP="{{.GATEWAY_IP}}"
+        -t gatewayIP6="{{.GATEWAY_IP6}}"
+        -t subnet6="{{.SUBNET6}}"
         -t bridgeName="{{.BRIDGE_NAME}}"
         -e out --out yaml > {{.STATE_FILE_FQ_PATH}}
     status:
@@ -176,6 +201,25 @@ tasks:
     cmds:
       - "cue vet ./cue/infra yaml: {{.STATE_FILE_FQ_PATH}} -l 'values:'"
       - "cue export ./cue/infra yaml: {{.STATE_FILE_FQ_PATH}} -l 'values:' -e outBmcSecret --out yaml > {{.OUTPUT_DIR}}/bmc-secret.yaml"
+
+  cluster-dns:
+    run: once
+    deps: [kind-cluster, tinkerbell-kind-cluster, update-state]
+    summary: |
+      Repoint CoreDNS at the DNS64 resolver in every kind cluster the
+      playground owns. No-op outside IPv6 mode.
+    vars:
+      TINK_KUBECONFIG:
+        sh: 'yq eval ''.kind.tinkerbell.kubeconfig // ""'' {{.STATE_FILE_FQ_PATH}}'
+      KUBECONFIG:
+        sh: "yq eval '.kind.kubeconfig' {{.STATE_FILE_FQ_PATH}}"
+    cmds:
+      - task: nat64:cluster-dns
+        vars:
+          KUBECONFIG: "{{.KUBECONFIG}}"
+      - task: nat64:cluster-dns
+        vars:
+          KUBECONFIG: '{{if .TINK_KUBECONFIG}}{{.TINK_KUBECONFIG}}{{else}}{{.KUBECONFIG}}{{end}}'
 
   deploy-tinkerbell-helm-chart:
     run: once
@@ -352,11 +396,9 @@ tasks:
     vars:
       EXTERNAL_TINKERBELL:
         sh: "yq eval '.externalTinkerbell // false' {{.STATE_FILE_FQ_PATH}}"
-      TINK_CLUSTER_NAME:
-        sh: 'yq eval ''.kind.tinkerbell.clusterName // ""'' {{.STATE_FILE_FQ_PATH}}'
       MGMT_KUBECONFIG:
         sh: "yq eval '.kind.kubeconfig' {{.STATE_FILE_FQ_PATH}}"
     cmds:
-      - ./scripts/create_external_kubeconfig_secret.sh "{{.TINK_CLUSTER_NAME}}" "{{.MGMT_KUBECONFIG}}"
+      - ./scripts/create_external_kubeconfig_secret.sh "{{.STATE_FILE_FQ_PATH}}"
     status:
       - 'KUBECONFIG="{{.MGMT_KUBECONFIG}}" kubectl get secret external-tinkerbell-kubeconfig -n capt-system >/dev/null 2>&1'

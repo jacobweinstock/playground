@@ -1,6 +1,8 @@
 version: "3"
 
 includes:
+  radvd: ./Taskfile-radvd.yaml
+  nat64: ./Taskfile-nat64.yaml
   network: ./Taskfile-network.yaml
   vbmc: ./Taskfile-vbmc.yaml
 
@@ -45,6 +47,8 @@ tasks:
       # Before network:delete: docker refuses to remove a network that still
       # has endpoints, and the shared vBMC is attached to this one.
       - task: vbmc:release
+      - task: radvd:delete
+      - task: nat64:delete
       - task: vms
       - task: default-storage-pool
       - task: output-dir
