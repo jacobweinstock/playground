@@ -86,11 +86,16 @@ jobs:
       # libvirtd is a system daemon that wants /dev/kvm, an AppArmor profile and
       # firmware descriptors it reads itself, so it comes from apt rather than
       # flox. flox covers the playground's own tooling, which is userspace.
+      #
+      # qemu-utils supplies qemu-img. Nothing in the playground calls it, but
+      # libvirtd does, to create the qcow2 volumes virt-install asks for -- and
+      # it looks on its own PATH, so a flox-provided one would not be found.
+      # Without it: "creation of non-raw file images is not supported".
       - name: Install the virtualization stack
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
-            qemu-kvm libvirt-daemon-system libvirt-clients virtinst ovmf cpu-checker
+            qemu-kvm qemu-utils libvirt-daemon-system libvirt-clients virtinst ovmf cpu-checker
 
       # Group membership needs a new login session, which a workflow step is
       # not, so the socket is opened up instead. Fine on a throwaway VM.
@@ -135,7 +140,9 @@ jobs:
 
       # Which virt-install wins matters: flox ships one via virt-manager and apt
       # ships another. Both talk to the same host libvirtd, but only the report
-      # says which was used if the run misbehaves.
+      # says which was used if the run misbehaves. qemu-img is here because
+      # libvirtd needs it, not the playground -- MISSING here means VM creation
+      # will fail later, which is how it was found the first time.
       #
       # activate-action runs its command via `flox activate -c '<command>'`, so
       # nothing here may contain a single quote, and it does not inherit
@@ -143,7 +150,7 @@ jobs:
       - name: Resolved toolchain
         uses: flox/activate-action@v1
         with:
-          command: cd capt && for b in go task cue helm kind kubectl clusterctl yq virsh virt-install docker; do printf "%-14s %s\n" "$b" "$(command -v "$b" || echo MISSING)"; done | tee /tmp/toolchain.txt
+          command: cd capt && for b in go task cue helm kind kubectl clusterctl yq virsh virt-install docker qemu-img; do printf "%-14s %s\n" "$b" "$(command -v "$b" || echo MISSING)"; done | tee /tmp/toolchain.txt
 
       - name: Record toolchain
         working-directory: .
