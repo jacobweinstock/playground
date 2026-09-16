@@ -21,6 +21,15 @@ import "strings"
 	clusterName: string & !=""
 	namespace:   string & !=""
 	outputDir:   string & !=""
+	// instance + names are added by cue/state/state.cue: the identity that
+	// keeps concurrent playgrounds apart, and the host-global names derived
+	// from it.
+	instance?: string
+	names?: close({
+		network:     string & !=""
+		kindCluster: string & !=""
+		tinkCluster: string & !=""
+	})
 	arch:        "amd64" | "arm64"
 	bootMode:    "netboot" | "isoboot"
 

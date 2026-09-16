@@ -1,47 +1,29 @@
 ---
-clusterName: "capt-playground"
-outputDir: "output"
-namespace: "tinkerbell"
-counts:
-  controlPlanes: 1
-  workers: 1
-  spares: 1
-versions:
-  capt: v0.7.0
-  chart: v0.23.1-23da0880
-  kube: v1.35.2
-  os: 2404
-  kubevip: 1.1.2
+arch: amd64
+bootMode: netboot
 capt:
   providerRepository: "https://github.com/tinkerbell/cluster-api-provider-tinkerbell/releases"
   #providerRepository: "/home/tink/repos/tinkerbell/cluster-api-provider-tinkerbell/out/release/infrastructure-tinkerbell"
+captainos:
+  kernelVersion: "6.18.16"
 chart:
-  location: "oci://ghcr.io/tinkerbell/charts/tinkerbell"
-  #location: "/home/tink/repos/tinkerbell/tinkerbell/helm/tinkerbell"
   extraVars:
     - optional.captainos.enabled=true
     - optional.captainos.image=ghcr.io/tinkerbell/captain/artifacts:v0.0.0-a4be23c
     - deployment.envs.ui.enableAutoLogin=true
-os:
-  # the image must have a tag in the format of <ubuntu version>-<k8s version>-<arch>.gz, for example: 2404-v1.36.0-arm64.gz
-  # ghcr.io/tinkerbell/cluster-api-provider-tinkerbell/ubuntu:2404-v1.36.0-arm64.gz
-  registry: ghcr.io/tinkerbell/cluster-api-provider-tinkerbell/ubuntu
-vm:
-  baseName: "node"
-  cpusPerVM: 2
-  memInMBPerVM: 2048
-  diskSizeInGBPerVM: 10
-  diskPath: "/tmp"
-virtualBMC:
-  containerName: "virtualbmc"
-  image: ghcr.io/jacobweinstock/virtualbmc:latest
-  user: "root"
-  pass: "calvin"
-bootMode: netboot
+  location: "oci://ghcr.io/tinkerbell/charts/tinkerbell"
+  #location: "/home/tink/repos/tinkerbell/tinkerbell/helm/tinkerbell"
+clusterName: "capt-playground"
+counts:
+  controlPlanes: 1
+  spares: 1
+  workers: 1
 externalTinkerbell: false
-arch: amd64
-captainos:
-  kernelVersion: "6.18.16"
+namespace: "tinkerbell"
+os:
+  # Tag format: <ubuntu version>-<k8s version>-<arch>.gz
+  registry: ghcr.io/tinkerbell/cluster-api-provider-tinkerbell/ubuntu
+outputDir: "output"
 # Pull-through OCI registry mirror. When enabled, every image pulled from
 # this directory is routed through `host` (HTTPS, publicly-trusted CA only):
 #   - Host-side image strings (helm chart.location, os.registry,
@@ -69,3 +51,17 @@ registryMirror:
     - "registry.k8s.io"
     - "gcr.io"
     - "docker.io"
+versions:
+  capt: v0.7.0
+  chart: v0.23.1-23da0880
+  kube: v1.35.2
+  kubevip: 1.1.2
+  os: 2404
+virtualBMC:
+  image: ghcr.io/jacobweinstock/virtualbmc:latest
+vm:
+  baseName: "node"
+  cpusPerVM: 2
+  diskPath: "/tmp"
+  diskSizeInGBPerVM: 10
+  memInMBPerVM: 2048
