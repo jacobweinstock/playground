@@ -10,7 +10,6 @@
 #
 # Environment:
 #   COMBINATIONS     JSON array of the combinations the plan job scheduled
-#   PLAN_SKIPPED     space separated combinations the plan job dropped
 #   REQUESTED        the combination(s) the dispatch asked for
 #   TINKERBELL_REPO  inputs.tinkerbell_repo, empty when using released artifacts
 #   TINKERBELL_REF   inputs.tinkerbell_ref
@@ -193,11 +192,6 @@ function main() {
 	echo "| **Tinkerbell** | $(source_cell) |"
 	echo "| **Playground** | [\`$GITHUB_REF_NAME\`]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/tree/$GITHUB_REF_NAME) (\`${GITHUB_SHA:0:7}\`) |"
 	echo "| **Requested** | \`${REQUESTED:-all}\` |"
-	if [ -n "${PLAN_SKIPPED:-}" ]; then
-		local listed
-		listed=$(for c in $PLAN_SKIPPED; do printf '`%s` ' "$c"; done)
-		echo "| **Not run** | $listed— needs \`tinkerbell_repo\` and \`tinkerbell_ref\` |"
-	fi
 	echo "| **Combinations** | $combo_line |"
 	echo "| **Specs** | $spec_line |"
 

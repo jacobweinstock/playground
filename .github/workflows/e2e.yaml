@@ -45,20 +45,18 @@ permissions:
   contents: read
 
 jobs:
-  # Fails in seconds on a bad name or an impossible pairing, rather than on one
-  # runner per combination that has already installed a hypervisor.
+  # Fails in seconds on a bad name, rather than on one runner per combination
+  # that has already installed a hypervisor.
   plan:
     runs-on: ubuntu-latest
     outputs:
       combinations: ${{ steps.resolve.outputs.combinations }}
-      skipped: ${{ steps.resolve.outputs.skipped }}
     steps:
       - name: Resolve the combination list
         id: resolve
         env:
           CHOICE: ${{ inputs.combination }}
           CUSTOM: ${{ inputs.combinations }}
-          REPO: ${{ inputs.tinkerbell_repo }}
         run: |
           # Deliberately a subset of `e2e list`: the -mirror combinations are
           # excluded because they need a reachable pull-through mirror that a
@@ -71,13 +69,10 @@ jobs:
 
           if [ -n "$CUSTOM" ]; then
             requested=$(echo "$CUSTOM" | tr ',' ' ')
-            named=yes
           elif [ "$CHOICE" = "all" ]; then
             requested="$all"
-            named=no
           else
             requested="$CHOICE"
-            named=yes
           fi
 
           for c in $requested; do
@@ -87,34 +82,7 @@ jobs:
             esac
           done
 
-          # IPv6 support is not in a released chart yet: the published one fails
-          # the install with "artifactsFileServer must be set when an OSIE is
-          # enabled". Asking for one by name without a source build is an error,
-          # but "all" quietly runs what it can so the default dispatch still
-          # works. Either way it costs seconds, not a runner per combination.
-          dropped=""
-          if [ -z "$REPO" ]; then
-            kept=""
-            for c in $requested; do
-              case "$c" in
-                *-ipv6-*)
-                  if [ "$named" = yes ]; then
-                    echo "::error::'$c' needs tinkerbell_repo and tinkerbell_ref; the released chart has no IPv6 support"
-                    exit 1
-                  fi
-                  dropped="$dropped $c"
-                  ;;
-                *) kept="$kept $c" ;;
-              esac
-            done
-            if [ -n "$dropped" ]; then
-              echo "::notice::skipping the IPv6 combinations; they need tinkerbell_repo and tinkerbell_ref"
-            fi
-            requested="$kept"
-          fi
-
           echo "combinations=$(printf '%s\n' $requested | jq -R . | jq -sc .)" >> "$GITHUB_OUTPUT"
-          echo "skipped=$(echo $dropped)" >> "$GITHUB_OUTPUT"
           echo "will run:"; printf '  %s\n' $requested
 
   e2e:
@@ -301,7 +269,6 @@ jobs:
       - name: Report
         env:
           COMBINATIONS: ${{ needs.plan.outputs.combinations }}
-          PLAN_SKIPPED: ${{ needs.plan.outputs.skipped }}
           REQUESTED: ${{ inputs.combinations || inputs.combination }}
           TINKERBELL_REPO: ${{ inputs.tinkerbell_repo }}
           TINKERBELL_REF: ${{ inputs.tinkerbell_ref }}
