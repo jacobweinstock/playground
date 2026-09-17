@@ -20,6 +20,10 @@ on:
           - colocated-ipv4-isoboot-direct
           - external-ipv4-netboot-direct
           - external-ipv4-isoboot-direct
+          - colocated-ipv6-netboot-direct
+          - colocated-ipv6-isoboot-direct
+          - external-ipv6-netboot-direct
+          - external-ipv6-isoboot-direct
       combinations:
         description: "Several combinations, comma or space separated (overrides the dropdown)"
         type: string
@@ -41,8 +45,8 @@ permissions:
   contents: read
 
 jobs:
-  # Fails in seconds on a bad name, rather than on four runners that have each
-  # spent a minute installing a hypervisor first.
+  # Fails in seconds on a bad name or an impossible pairing, rather than on one
+  # runner per combination that has already installed a hypervisor.
   plan:
     runs-on: ubuntu-latest
     outputs:
@@ -53,19 +57,26 @@ jobs:
         env:
           CHOICE: ${{ inputs.combination }}
           CUSTOM: ${{ inputs.combinations }}
+          REPO: ${{ inputs.tinkerbell_repo }}
         run: |
-          # Deliberately a subset of `e2e list`: IPv4 only for now, and the
-          # -mirror combinations are excluded because they need a reachable
-          # pull-through mirror that a hosted runner does not have.
+          # Deliberately a subset of `e2e list`: the -mirror combinations are
+          # excluded because they need a reachable pull-through mirror that a
+          # hosted runner does not have. The IPv6 combinations need no mirror --
+          # DNS64 and NAT64 carry the upstream pulls -- so they run direct.
           all="colocated-ipv4-netboot-direct colocated-ipv4-isoboot-direct"
           all="$all external-ipv4-netboot-direct external-ipv4-isoboot-direct"
+          all="$all colocated-ipv6-netboot-direct colocated-ipv6-isoboot-direct"
+          all="$all external-ipv6-netboot-direct external-ipv6-isoboot-direct"
 
           if [ -n "$CUSTOM" ]; then
             requested=$(echo "$CUSTOM" | tr ',' ' ')
+            named=yes
           elif [ "$CHOICE" = "all" ]; then
             requested="$all"
+            named=no
           else
             requested="$CHOICE"
+            named=yes
           fi
 
           for c in $requested; do
@@ -74,6 +85,31 @@ jobs:
               *) echo "::error::unknown combination '$c'; choose from: $all"; exit 1 ;;
             esac
           done
+
+          # IPv6 support is not in a released chart yet: the published one fails
+          # the install with "artifactsFileServer must be set when an OSIE is
+          # enabled". Asking for one by name without a source build is an error,
+          # but "all" quietly runs what it can so the default dispatch still
+          # works. Either way it costs seconds, not a runner per combination.
+          if [ -z "$REPO" ]; then
+            kept=""; skipped=no
+            for c in $requested; do
+              case "$c" in
+                *-ipv6-*)
+                  if [ "$named" = yes ]; then
+                    echo "::error::'$c' needs tinkerbell_repo and tinkerbell_ref; the released chart has no IPv6 support"
+                    exit 1
+                  fi
+                  skipped=yes
+                  ;;
+                *) kept="$kept $c" ;;
+              esac
+            done
+            if [ "$skipped" = yes ]; then
+              echo "::notice::skipping the IPv6 combinations; they need tinkerbell_repo and tinkerbell_ref"
+            fi
+            requested="$kept"
+          fi
 
           echo "combinations=$(printf '%s\n' $requested | jq -R . | jq -sc .)" >> "$GITHUB_OUTPUT"
           echo "will run:"; printf '  %s\n' $requested
@@ -86,7 +122,7 @@ jobs:
     # hung run sit for hours.
     timeout-minutes: 45
     strategy:
-      # One broken combination should not cancel the other three; the point of
+      # One broken combination should not cancel the rest; the point of
       # the matrix is to learn about all of them in one dispatch.
       fail-fast: false
       matrix:
@@ -186,7 +222,7 @@ jobs:
           command: cd capt && ./e2e/run.sh $E2E_ARGS
 
       # Written into the artifact so the summary job can tabulate what happened
-      # without re-deriving it from four sets of logs.
+      # without re-deriving it from every combination's logs.
       - name: Record the result
         if: always()
         run: |
