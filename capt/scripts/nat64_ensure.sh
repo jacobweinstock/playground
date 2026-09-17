@@ -11,9 +11,15 @@ set -euo pipefail
 # has to be made per-instance.
 #
 # Everything it does outlives the container (`tayga --mktun` makes the TUN
-# device persistent, the masquerade rule lands in the host's nat table), which
-# is why nat64_release.sh has to undo them explicitly rather than rely on
-# `docker rm`.
+# device persistent, the masquerade and forward rules land in the host's
+# tables), which is why nat64_release.sh has to undo them explicitly rather
+# than rely on `docker rm`.
+#
+# The forward rules matter on a host where docker had to enable IP forwarding
+# itself: docker then sets the FORWARD policy to DROP and accepts only traffic
+# arriving on one of its own bridges, and the translator's TUN device is not
+# one. A host that already had forwarding on when dockerd started keeps an
+# ACCEPT policy, so this is invisible there and only bites a clean machine.
 #
 # The bridge address, by contrast, IS per playground and is repaired on every
 # call: docker assigns the IPv6 gateway to the bridge on a freshly created
@@ -56,6 +62,7 @@ function start_translator() {
 		-c "set -e;
 			${NET_PKGS};
 			${IPT_PICK};
+			${IPT6_PICK};
 			mkdir -p /var/spool/tayga;
 			printf 'tun-device ${tun_dev}\nipv4-addr ${tayga_ipv4}\nprefix ${prefix}\ndynamic-pool ${tayga_pool}\ndata-dir /var/spool/tayga\n' > /etc/tayga.conf;
 			tayga --mktun -c /etc/tayga.conf;
@@ -65,6 +72,12 @@ function start_translator() {
 			ip -6 route add ${prefix} dev ${tun_dev};
 			\$IPT -t nat -C POSTROUTING -s ${tayga_pool} ! -o ${tun_dev} -j MASQUERADE 2>/dev/null ||
 			\$IPT -t nat -A POSTROUTING -s ${tayga_pool} ! -o ${tun_dev} -j MASQUERADE;
+			for ipt in \$IPT \$IPT6; do
+				for dir in -i -o; do
+					\$ipt -C FORWARD \$dir ${tun_dev} -j ACCEPT 2>/dev/null ||
+					\$ipt -A FORWARD \$dir ${tun_dev} -j ACCEPT;
+				done;
+			done;
 			exec tayga -d -c /etc/tayga.conf --nodetach" >/dev/null
 }
 
