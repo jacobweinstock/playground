@@ -8,11 +8,13 @@ import (
 
 _spares: int | *0 @tag(spares,type=int)
 
-_chartVersion: string | *"v0.25.1-733792cc" @tag(chartVersion)
+// No default: the runner passes whatever `latest` resolves to, and a pin here
+// could only go stale behind it.
+_chartVersion: string @tag(chartVersion)
 
 // Build Tinkerbell from a git repo rather than using released artifacts. Absent
 // unless the runner asks for it, and then it supplies the chart and both images,
-// so versions.chart and chart.location above stop applying.
+// so versions.chart and chart.location stop applying.
 _sourceRepo: string | *"" @tag(sourceRepo)
 _sourceRef:  string | *"" @tag(sourceRef)
 
@@ -43,10 +45,18 @@ base: state.#ConfigInput & {
 
 	versions: {
 		capt:    "v0.7.0"
-		chart:   _chartVersion
 		kube:    "v1.35.2"
 		os:      2404
 		kubevip: "1.1.2"
+
+		// A source build overwrites this with the version it produced, and helm
+		// ignores --version for the chart it packages, so nothing pulls it.
+		if _sourceRequested {
+			chart: "source"
+		}
+		if !_sourceRequested {
+			chart: _chartVersion
+		}
 	}
 
 	capt: providerRepository: "https://github.com/tinkerbell/cluster-api-provider-tinkerbell/releases"

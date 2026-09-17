@@ -36,6 +36,10 @@ on:
         description: "Build Tinkerbell from this branch, tag or commit"
         type: string
         default: ""
+      chart_version:
+        description: "Tinkerbell Helm chart version (blank = whatever latest points at)"
+        type: string
+        default: ""
       probes:
         description: "Report KVM and libvirt diagnostics before running"
         type: boolean
@@ -175,10 +179,12 @@ jobs:
         env:
           TINKERBELL_REPO: ${{ inputs.tinkerbell_repo }}
           TINKERBELL_REF: ${{ inputs.tinkerbell_ref }}
+          CHART_VERSION: ${{ inputs.chart_version }}
         run: |
           args="$COMBO --plain"
           [ -n "$TINKERBELL_REPO" ] && args="$args --tinkerbell-repo $TINKERBELL_REPO"
           [ -n "$TINKERBELL_REF" ] && args="$args --tinkerbell-ref $TINKERBELL_REF"
+          [ -n "$CHART_VERSION" ] && args="$args --chart-version $CHART_VERSION"
           echo "E2E_ARGS=$args" >> "$GITHUB_ENV"
           date +%s > /tmp/run-start
 
@@ -272,4 +278,5 @@ jobs:
           REQUESTED: ${{ inputs.combinations || inputs.combination }}
           TINKERBELL_REPO: ${{ inputs.tinkerbell_repo }}
           TINKERBELL_REF: ${{ inputs.tinkerbell_ref }}
+          CHART_VERSION: ${{ inputs.chart_version }}
         run: .github/scripts/e2e-summary.sh artifacts | tee -a "$GITHUB_STEP_SUMMARY"

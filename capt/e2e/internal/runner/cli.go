@@ -182,7 +182,7 @@ func rootFlags(o *Options, fs *ff.FlagSet) {
 func configFlags(o *Options, fs *ff.FlagSet) {
 	fs.StringVar(&o.MirrorHost, 0, "mirror-host", "", "registry mirror hostname")
 	fs.StringVar(&o.ConfigFile, 0, "config", "", "use this file instead of rendering the combo's config")
-	fs.StringVar(&o.ChartVersion, 0, "chart-version", "", "override the Tinkerbell Helm chart version")
+	fs.StringVar(&o.ChartVersion, 0, "chart-version", "", "Tinkerbell Helm chart version (default: what latest resolves to)")
 	fs.StringVar(&o.TinkerbellRepo, 0, "tinkerbell-repo", "", "build Tinkerbell from this git repo or local checkout")
 	fs.StringVar(&o.TinkerbellRef, 0, "tinkerbell-ref", "", "build Tinkerbell from this branch, tag or commit")
 	fs.IntVar(&o.Spares, 0, "spares", 0, "spare VMs to create")
@@ -379,6 +379,23 @@ func (r *Runner) sourceDescription() string {
 		ref = "(default branch)"
 	}
 	return repo + " @ " + ref
+}
+
+// tinkerbellDescription names the Tinkerbell a combo will install, so the run
+// says what was under test without anyone opening its config.yaml.
+func (r *Runner) tinkerbellDescription() (string, error) {
+	if r.SourceRequested() {
+		return "built from " + r.sourceDescription(), nil
+	}
+
+	chart, err := r.chartVersion()
+	if err != nil {
+		return "", err
+	}
+	if r.Opts.ChartVersion != "" {
+		return "chart " + chart + " (--chart-version)", nil
+	}
+	return "chart " + chart + " (latest)", nil
 }
 
 // Validate checks the parsed options, resolving the defaults they depend on.

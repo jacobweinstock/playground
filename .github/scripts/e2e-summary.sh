@@ -13,6 +13,7 @@
 #   REQUESTED        the combination(s) the dispatch asked for
 #   TINKERBELL_REPO  inputs.tinkerbell_repo, empty when using released artifacts
 #   TINKERBELL_REF   inputs.tinkerbell_ref
+#   CHART_VERSION    inputs.chart_version, empty when the runner resolved it
 #   GITHUB_*         supplied by the runner
 
 set -euo pipefail
@@ -64,7 +65,12 @@ readonly JQ_TABLE=$JQ_LIB'
 # a URL we can build a tree link out of.
 function source_cell() {
 	if [ -z "${TINKERBELL_REPO:-}" ]; then
-		echo "released artifacts (no \`tinkerbell_repo\` given)"
+		if [ -n "${CHART_VERSION:-}" ]; then
+			echo "published chart \`$CHART_VERSION\`"
+		else
+			# Resolved per run, so the exact version is in each config.yaml.
+			echo 'published chart, whatever `latest` pointed at'
+		fi
 		return
 	fi
 
@@ -100,9 +106,44 @@ function spec_counts() {
 	echo "${cell# }"
 }
 
+# Reads parent.key out of a generated config.yaml or state.yaml. Both are two
+# levels deep and two-space indented, and this runner has no yq.
+function yaml_field() {
+	local file="$1" parent="$2" key="$3"
+
+	[ -f "$file" ] || return 0
+	awk -v parent="$parent:" -v key="  $key:" '
+		$0 == parent { inside = 1; next }
+		inside && /^[^ ]/ { inside = 0 }
+		inside && index($0, key) == 1 { sub(/^[^:]*: */, ""); print; exit }
+	' "$file"
+}
+
+# What a combination actually installed, which is a fact about the run rather
+# than about the dispatch: `latest` is resolved per job, so two combinations in
+# one matrix can differ if main moves between them.
+function combo_tinkerbell() {
+	local dir="$1" version repo ref chart
+
+	version=$(yaml_field "$dir/state.yaml" source version)
+	if [ -n "$version" ]; then
+		repo=$(yaml_field "$dir/state.yaml" source repo)
+		ref=$(yaml_field "$dir/state.yaml" source ref)
+		echo "built \`$version\` from \`${repo:-default repo}\` @ \`${ref:-default branch}\`"
+		return
+	fi
+
+	# state.yaml is written as the playground comes up, so a run that died
+	# before that still has the config it was going to use.
+	chart=$(yaml_field "$dir/state.yaml" versions chart)
+	[ -n "$chart" ] || chart=$(yaml_field "$dir/config.yaml" versions chart)
+	[ -n "$chart" ] || return 0
+	echo "chart \`$chart\`"
+}
+
 function main() {
 	declare -r ARTIFACTS="${1:-artifacts}"
-	declare -r ROWS=$(mktemp) DETAIL=$(mktemp) FAILS=$(mktemp)
+	declare -r ROWS=$(mktemp) DETAIL=$(mktemp) FAILS=$(mktemp) VERSIONS=$(mktemp)
 
 	local total=0 won=0 lost=0 gone=0
 	local pass_total=0 fail_total=0 skip_total=0 ns_total=0
@@ -130,14 +171,25 @@ function main() {
 
 		local mark
 		case "$outcome" in
-		success) won=$((won + 1)); mark="✅ success" ;;
-		missing) gone=$((gone + 1)); mark="⚠️ no artifact" ;;
+		success)
+			won=$((won + 1))
+			mark="✅ success"
+			;;
+		missing)
+			gone=$((gone + 1))
+			mark="⚠️ no artifact"
+			;;
 		cancelled | skipped) mark="⚪ $outcome" ;;
-		*) lost=$((lost + 1)); mark="❌ $outcome" ;;
+		*)
+			lost=$((lost + 1))
+			mark="❌ $outcome"
+			;;
 		esac
 
-		local counts
+		local counts tinkerbell
 		counts=$(spec_counts "$p" "$f" "$s" "$pend")
+		tinkerbell=$(combo_tinkerbell "$dir")
+		if [ -n "$tinkerbell" ]; then echo "$tinkerbell" >>"$VERSIONS"; fi
 
 		printf '| [%s](#%s) | %s | %s | %s | %s |\n' \
 			"$combo" "$combo" "$mark" "$job" "${counts:-—}" "$spec" >>"$ROWS"
@@ -157,6 +209,10 @@ function main() {
 			echo
 			echo "#### $combo"
 			echo
+			if [ -n "$tinkerbell" ]; then
+				echo "Tinkerbell: $tinkerbell"
+				echo
+			fi
 			if [ -f "$dir/report.json" ]; then
 				echo "<details$open><summary>$mark · ${counts:-no specs} · $spec</summary>"
 				echo
@@ -185,11 +241,23 @@ function main() {
 	if [ "$skip_total" -gt 0 ]; then spec_line="$spec_line · $skip_total skipped"; fi
 	spec_line="$spec_line — $((secs / 60))m $((secs % 60))s in specs"
 
+	# Read back from the artifacts when every combination agrees, because that
+	# names the exact version rather than the dispatch's intent.
+	local versions count
+	versions=$(sort -u "$VERSIONS")
+	count=$(grep -c . <<<"$versions" || true)
+
 	echo "## e2e matrix"
 	echo
 	echo "| | |"
 	echo "|---|---|"
-	echo "| **Tinkerbell** | $(source_cell) |"
+	if [ "$count" -eq 1 ]; then
+		echo "| **Tinkerbell** | $versions |"
+	elif [ "$count" -gt 1 ]; then
+		echo "| **Tinkerbell** | varies by combination — see below |"
+	else
+		echo "| **Tinkerbell** | $(source_cell) |"
+	fi
 	echo "| **Playground** | [\`$GITHUB_REF_NAME\`]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/tree/$GITHUB_REF_NAME) (\`${GITHUB_SHA:0:7}\`) |"
 	echo "| **Requested** | \`${REQUESTED:-all}\` |"
 	echo "| **Combinations** | $combo_line |"

@@ -443,8 +443,11 @@ Global, accepted by every command and ahead of the command name:
   `task` and `ginkgo` invocations.
 - `--config FILE` — use `FILE` as `config.yaml` instead of rendering the
   combo. A combo given alongside it still selects which tests run.
-- `--chart-version V` — override the Tinkerbell Helm chart version. Cannot be
-  combined with the `--tinkerbell-*` flags below, which produce the chart.
+- `--chart-version V` — install this Tinkerbell Helm chart version instead of
+  the latest. By default the runner resolves what `latest` points at on
+  `ghcr.io/tinkerbell/tinkerbell` and installs the chart published alongside it,
+  so a run picks up main without anyone editing a pin. Cannot be combined with
+  the `--tinkerbell-*` flags below, which produce the chart.
 - `--tinkerbell-repo R` — build Tinkerbell from this git URL or local checkout
   instead of using released artifacts.
 - `--tinkerbell-ref REF` — build Tinkerbell from this branch, tag or commit.

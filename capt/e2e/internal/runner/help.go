@@ -58,7 +58,7 @@ torn down in turn; full output goes to the artifacts directory either way.
 Configuration:
       --mirror-host HOST   registry mirror hostname, required by *-mirror
       --config FILE        use FILE instead of rendering the combo's config
-      --chart-version VER  override the Tinkerbell Helm chart version
+      --chart-version VER  chart version to install (default: latest)
       --tinkerbell-repo R  build Tinkerbell from this git repo or checkout
       --tinkerbell-ref REF build Tinkerbell from this branch, tag or commit
       --spares N           spare VMs to create (default 0)
@@ -109,7 +109,7 @@ produces a multi-document stream, each preceded by its name.
 Flags:
       --mirror-host HOST   registry mirror hostname, required by *-mirror
       --config FILE        preview FILE with the runner's overrides applied
-      --chart-version VER  override the Tinkerbell Helm chart version
+      --chart-version VER  chart version to install (default: latest)
       --tinkerbell-repo R  build Tinkerbell from this repo or local checkout
       --tinkerbell-ref REF build Tinkerbell from this branch, tag or commit
       --spares N           spare VMs to create (default 0)

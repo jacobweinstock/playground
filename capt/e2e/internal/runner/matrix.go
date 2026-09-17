@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime/debug"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -17,6 +18,10 @@ type Runner struct {
 	Paths  Paths
 	UI     *UI
 	ginkgo string
+
+	chartOnce sync.Once
+	chartVer  string
+	chartErr  error
 }
 
 func New(opts Options, paths Paths, ui *UI) *Runner {
@@ -266,9 +271,14 @@ func (r *Runner) runCombo(combo string, index, total int) Result {
 	}
 	r.UI.Detail("label filter: %s", labels)
 	r.UI.Detail("artifacts:    %s", artifacts)
-	if r.SourceRequested() {
-		r.UI.Detail("source:       %s", r.sourceDescription())
+
+	// Ahead of prepareConfig so a version that cannot be resolved is reported
+	// as that, rather than as the CUE render it would go on to break.
+	tinkerbell, err := r.tinkerbellDescription()
+	if err != nil {
+		return Result{Name: combo, Status: StatusFail, Duration: time.Since(start), Detail: err.Error()}
 	}
+	r.UI.Log("  tinkerbell: %s", tinkerbell)
 
 	if err := r.prepareConfig(combo, artifacts); err != nil {
 		return Result{Name: combo, Status: StatusFail, Duration: time.Since(start), Detail: err.Error()}
@@ -361,11 +371,11 @@ func (r *Runner) prepareConfig(combo, artifacts string) error {
 	dest := playgroundAt(artifacts).Config
 
 	if r.Opts.ConfigFile != "" {
-		r.UI.Log("  config: %s (supplied)", r.Paths.Rel(r.Opts.ConfigFile))
+		r.UI.Log("  config:     %s (supplied)", r.Paths.Rel(r.Opts.ConfigFile))
 		return r.CopySuppliedConfig(r.Opts.ConfigFile, dest)
 	}
 
-	r.UI.Log("  config: rendered from combo")
+	r.UI.Log("  config:     rendered from combo")
 	if err := r.RenderComboConfig(combo, dest); err != nil {
 		r.UI.Err("")
 		r.UI.Err("CUE render failed:")

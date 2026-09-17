@@ -18,11 +18,14 @@
 //   # List all combo names
 //   cue eval ./e2e/cue -e comboNames --out json
 //
-//   # Render a single combo as config.yaml
-//   cue export ./e2e/cue -e 'combos["colocated-ipv4-netboot-direct"]' --out yaml
+//   # Render a single combo as config.yaml. chartVersion has no default, so it
+//   # must be given here; `e2e config <combo>` resolves it for you instead.
+//   cue export ./e2e/cue -e 'combos["colocated-ipv4-netboot-direct"]' \
+//     -t chartVersion=v0.25.1-6e7d2775 --out yaml
 //
 //   # Render all combos (struct keyed by name)
-//   cue export ./e2e/cue -e combos -t mirrorHost=reg.example.com --out yaml
+//   cue export ./e2e/cue -e combos -t chartVersion=v0.25.1-6e7d2775 \
+//     -t mirrorHost=reg.example.com --out yaml
 package e2e
 
 import (

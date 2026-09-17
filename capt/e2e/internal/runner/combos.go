@@ -82,14 +82,19 @@ func (r *Runner) RenderComboConfig(combo, dest string) error {
 // renderCombo exports one combo's config, with the same tags a real run uses,
 // so what is shown is what would be written.
 func (r *Runner) renderCombo(combo, outputDir string, w io.Writer) error {
+	chart, err := r.chartVersion()
+	if err != nil {
+		return err
+	}
+
 	args := []string{"export", cuePackage, "-e", fmt.Sprintf("combos[%q]", combo),
 		"-t", fmt.Sprintf("spares=%d", r.Opts.Spares),
 		"-t", "outputDir=" + outputDir}
 	if r.Opts.MirrorHost != "" {
 		args = append(args, "-t", "mirrorHost="+r.Opts.MirrorHost)
 	}
-	if r.Opts.ChartVersion != "" {
-		args = append(args, "-t", "chartVersion="+r.Opts.ChartVersion)
+	if chart != "" {
+		args = append(args, "-t", "chartVersion="+chart)
 	}
 	if r.Opts.TinkerbellRepo != "" {
 		args = append(args, "-t", "sourceRepo="+r.Opts.TinkerbellRepo)
@@ -113,10 +118,15 @@ func (r *Runner) copySuppliedConfigTo(src, dest, outputDir string) error {
 		return err
 	}
 
+	chart, err := r.chartVersion()
+	if err != nil {
+		return err
+	}
+
 	// yq edits in place, preserving the rest of the document as written.
 	edits := []string{fmt.Sprintf(".outputDir = %q", outputDir)}
-	if r.Opts.ChartVersion != "" {
-		edits = append(edits, fmt.Sprintf(".versions.chart = %q", r.Opts.ChartVersion))
+	if chart != "" {
+		edits = append(edits, fmt.Sprintf(".versions.chart = %q", chart))
 	}
 	// Written even when empty so the block exists and the playground's own
 	// default repo applies; a `source` key with no repo is what signals a build.
