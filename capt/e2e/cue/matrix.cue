@@ -1,4 +1,4 @@
-// Test matrix: 3 binary axes → 8 combos, plus 4 explicit IPv6 combos.
+// Test matrix: 4 binary axes → 16 combos.
 //
 // Combo names read as <topology>-<ipFamily>-<bootMode>-<registry>, one segment
 // per axis, always in that order:
@@ -10,9 +10,9 @@
 // Every axis appears in every name, so a name alone says exactly what is
 // exercised, and the segments match the Ginkgo labels one-for-one.
 //
-// The IPv6 combos are listed explicitly rather than added as a full axis:
-// they only make sense with a mirror, and completing the cross-product would
-// add four combos that cannot pass.
+// Combos are written out rather than generated from the axes, so that adding
+// one is a deliberate act and any combo that needs a caveat has somewhere to
+// carry it.
 //
 // Usage (from the capt/ directory):
 //   # List all combo names
@@ -95,9 +95,22 @@ _overrides: {
 		externalTinkerbell: true
 		registryMirror:     _mirrorConfig
 	}
-	// IPv6 combos are mirror-only by necessity: ghcr.io publishes no AAAA
-	// record, so IPv6-only workload nodes can only reach it through a mirror,
-	// itself reached through the NAT64/DNS64 layer.
+	// The -direct IPv6 combos are not a contradiction: ghcr.io publishes no
+	// AAAA record at all, but DNS64 synthesises one for every name via
+	// translate_all, so NAT64 carries the upstream pulls. The mirror is a
+	// bandwidth cache here, not the only path to an IPv4-only registry.
+	"colocated-ipv6-netboot-direct": {
+		bootMode:           "netboot"
+		externalTinkerbell: false
+		ipFamily:           "ipv6"
+		registryMirror:     _direct
+	}
+	"colocated-ipv6-isoboot-direct": {
+		bootMode:           "isoboot"
+		externalTinkerbell: false
+		ipFamily:           "ipv6"
+		registryMirror:     _direct
+	}
 	"colocated-ipv6-netboot-mirror": {
 		bootMode:           "netboot"
 		externalTinkerbell: false
@@ -109,6 +122,18 @@ _overrides: {
 		externalTinkerbell: false
 		ipFamily:           "ipv6"
 		registryMirror:     _mirrorConfig
+	}
+	"external-ipv6-netboot-direct": {
+		bootMode:           "netboot"
+		externalTinkerbell: true
+		ipFamily:           "ipv6"
+		registryMirror:     _direct
+	}
+	"external-ipv6-isoboot-direct": {
+		bootMode:           "isoboot"
+		externalTinkerbell: true
+		ipFamily:           "ipv6"
+		registryMirror:     _direct
 	}
 	"external-ipv6-netboot-mirror": {
 		bootMode:           "netboot"
