@@ -2,8 +2,7 @@
 #
 # Sizing comes from a measured run rather than a guess: a hosted runner
 # completed colocated-ipv4-netboot-direct in 7m05s using 20 GB of the 87 GB
-# free on /, with nested KVM working. See .github/workflows/e2e-spike.yaml,
-# which is kept for one-off debugging.
+# free on /, with nested KVM working -- which GitHub documents as unsupported.
 name: e2e
 
 on:
@@ -107,7 +106,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # libvirtd is a system daemon that wants /dev/kvm, an AppArmor profile and
       # firmware descriptors it reads itself, so it comes from apt rather than
@@ -200,7 +199,7 @@ jobs:
 
       - name: Upload artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-${{ matrix.combination }}
           path: capt/e2e/artifacts/${{ matrix.combination }}/
@@ -246,7 +245,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Collect results
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: e2e-*
           path: artifacts
