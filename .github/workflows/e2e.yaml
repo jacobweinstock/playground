@@ -51,6 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       combinations: ${{ steps.resolve.outputs.combinations }}
+      skipped: ${{ steps.resolve.outputs.skipped }}
     steps:
       - name: Resolve the combination list
         id: resolve
@@ -91,8 +92,9 @@ jobs:
           # enabled". Asking for one by name without a source build is an error,
           # but "all" quietly runs what it can so the default dispatch still
           # works. Either way it costs seconds, not a runner per combination.
+          dropped=""
           if [ -z "$REPO" ]; then
-            kept=""; skipped=no
+            kept=""
             for c in $requested; do
               case "$c" in
                 *-ipv6-*)
@@ -100,18 +102,19 @@ jobs:
                     echo "::error::'$c' needs tinkerbell_repo and tinkerbell_ref; the released chart has no IPv6 support"
                     exit 1
                   fi
-                  skipped=yes
+                  dropped="$dropped $c"
                   ;;
                 *) kept="$kept $c" ;;
               esac
             done
-            if [ "$skipped" = yes ]; then
+            if [ -n "$dropped" ]; then
               echo "::notice::skipping the IPv6 combinations; they need tinkerbell_repo and tinkerbell_ref"
             fi
             requested="$kept"
           fi
 
           echo "combinations=$(printf '%s\n' $requested | jq -R . | jq -sc .)" >> "$GITHUB_OUTPUT"
+          echo "skipped=$(echo $dropped)" >> "$GITHUB_OUTPUT"
           echo "will run:"; printf '  %s\n' $requested
 
   e2e:
@@ -280,22 +283,26 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
+      # First, and sparse: checkout cleans the workspace, which would take the
+      # downloaded artifacts with it.
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/scripts
+
       - name: Collect results
         uses: actions/download-artifact@v8
         with:
           pattern: e2e-*
           path: artifacts
 
+      # The per-spec detail comes from the report.json ginkgo already writes into
+      # every artifact, so the matrix jobs produce nothing extra to feed this.
       - name: Report
-        run: |
-          {
-            echo "## e2e matrix"
-            echo
-            echo "| combination | result | duration |"
-            echo "|---|---|---|"
-            for f in artifacts/*/result.tsv; do
-              [ -f "$f" ] || continue
-              IFS=$'\t' read -r combo outcome dur < "$f"
-              echo "| \`$combo\` | $outcome | $dur |"
-            done
-          } | tee -a "$GITHUB_STEP_SUMMARY"
+        env:
+          COMBINATIONS: ${{ needs.plan.outputs.combinations }}
+          PLAN_SKIPPED: ${{ needs.plan.outputs.skipped }}
+          REQUESTED: ${{ inputs.combinations || inputs.combination }}
+          TINKERBELL_REPO: ${{ inputs.tinkerbell_repo }}
+          TINKERBELL_REF: ${{ inputs.tinkerbell_ref }}
+        run: .github/scripts/e2e-summary.sh artifacts | tee -a "$GITHUB_STEP_SUMMARY"
