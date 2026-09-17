@@ -38,6 +38,15 @@ function subnet_for() {
 	fi
 }
 
+# The address docker would pick for the bridge anyway. Asking for it by name
+# is what makes `docker network inspect` report it: engines before 29 echo the
+# IPAM config back as it was requested, so an auto-assigned IPv6 gateway is
+# reported as "" and everything the playground derives from it comes out empty.
+function gateway_for() {
+	declare -r subnet="$1"
+	echo "${subnet%::/64}::1"
+}
+
 # Subnets docker has already handed out, across every network it knows.
 function subnets_in_use() {
 	declare network
@@ -96,6 +105,7 @@ function main() {
 			--driver bridge \
 			--ipv6 \
 			--subnet "$subnet" \
+			--gateway "$(gateway_for "$subnet")" \
 			-o com.docker.network.bridge.enable_ip_masquerade=true \
 			--label "capt.playground.id=${instance_id}" \
 			--label "capt.playground.ipfamily=${ip_family}" \
