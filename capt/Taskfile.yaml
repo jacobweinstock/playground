@@ -50,9 +50,9 @@ vars:
   # .state, which does not exist yet. scripts/state_value.sh reads it when it
   # is there and asks cue for the same field when it is not.
   OUTPUT_DIR:
-    sh: '{{.ROOT_DIR}}/scripts/state_value.sh {{.CONFIG_FILE_FQ_PATH}} {{.STATE_FILE_FQ_PATH}} {{.INSTANCE_ID}} outputDir'
+    sh: "{{.ROOT_DIR}}/scripts/state_value.sh {{.CONFIG_FILE_FQ_PATH}} {{.STATE_FILE_FQ_PATH}} {{.INSTANCE_ID}} outputDir"
   NETWORK_NAME:
-    sh: '{{.ROOT_DIR}}/scripts/state_value.sh {{.CONFIG_FILE_FQ_PATH}} {{.STATE_FILE_FQ_PATH}} {{.INSTANCE_ID}} names.network'
+    sh: "{{.ROOT_DIR}}/scripts/state_value.sh {{.CONFIG_FILE_FQ_PATH}} {{.STATE_FILE_FQ_PATH}} {{.INSTANCE_ID}} names.network"
   # Tags every `cue export ./cue/state` needs, wherever it runs. The state file
   # is rendered twice -- once before the network exists and again with what it
   # supplies -- and the second render replaces the first, so a tag missing from

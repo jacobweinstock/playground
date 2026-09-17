@@ -42,7 +42,7 @@ declare -r BLOCKS=512
 function base_port_for() {
 	declare -r instance_id="$1"
 
-	if [[ -z "$instance_id" ]]; then
+	if [[ -z $instance_id ]]; then
 		echo "$BASE_PORT"
 		return 0
 	fi
@@ -70,9 +70,9 @@ function existing_ports_for() {
 
 	declare name port
 	while read -r name; do
-		[[ -n "$name" ]] || continue
+		[[ -n $name ]] || continue
 		port="$(awk -F'|' -v want="$name" 'NF >= 5 { gsub(/ /, "", $2); gsub(/ /, "", $5); if ($2 == want) print $5 }' <<<"$listing")"
-		[[ -n "$port" ]] || return 1
+		[[ -n $port ]] || return 1
 		echo "${name},${port}"
 	done < <(yq eval '.vm.details | keys | .[]' "$state_file")
 }
@@ -88,8 +88,8 @@ function main() {
 	instance_id="$(state_field "$state_file" '.instance')"
 
 	declare assignments
-	if assignments="$(existing_ports_for "$container" "$state_file")" && [[ -n "$assignments" ]]; then
-		[[ "$mode" == "--check" ]] || echo "reusing the BMC ports already registered for this playground" >&2
+	if assignments="$(existing_ports_for "$container" "$state_file")" && [[ -n $assignments ]]; then
+		[[ $mode == "--check" ]] || echo "reusing the BMC ports already registered for this playground" >&2
 	else
 		declare taken
 		taken="$(ports_in_use "$container")"
@@ -98,7 +98,7 @@ function main() {
 		port="$(base_port_for "$instance_id")"
 		declare name
 		while read -r name; do
-			[[ -n "$name" ]] || continue
+			[[ -n $name ]] || continue
 			while grep -qx "$port" <<<"$taken"; do
 				port=$((port + 1))
 			done
@@ -109,13 +109,13 @@ function main() {
 
 	declare name assigned current
 	while IFS=, read -r name assigned; do
-		[[ -n "$name" ]] || continue
+		[[ -n $name ]] || continue
 
 		# --check answers the task's `status:`: the state file already holds
 		# what this would write, so there is nothing to do.
-		if [[ "$mode" == "--check" ]]; then
+		if [[ $mode == "--check" ]]; then
 			current="$(name="$name" yq eval '.vm.details[strenv(name)].bmc.port // ""' "$state_file")"
-			[[ "$current" == "$assigned" ]] || return 1
+			[[ $current == "$assigned" ]] || return 1
 			continue
 		fi
 

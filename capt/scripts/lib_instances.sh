@@ -25,10 +25,10 @@ function capt_networks() {
 
 	declare name id
 	while read -r name; do
-		[[ -n "$name" ]] || continue
-		if [[ -n "$except_id" ]]; then
+		[[ -n $name ]] || continue
+		if [[ -n $except_id ]]; then
 			id="$(docker network inspect "$name" -f "{{index .Labels \"${CAPT_LABEL_ID}\"}}" 2>/dev/null || true)"
-			[[ "$id" != "$except_id" ]] || continue
+			[[ $id != "$except_id" ]] || continue
 		fi
 		echo "$name"
 	done < <(docker network ls --filter "label=${CAPT_LABEL_ID}" --format '{{.Name}}')
@@ -43,7 +43,7 @@ function capt_networks_with_family() {
 
 	declare name
 	while read -r name; do
-		[[ -n "$name" ]] || continue
+		[[ -n $name ]] || continue
 		if [[ "$(docker network inspect "$name" -f "{{index .Labels \"${CAPT_LABEL_FAMILY}\"}}" 2>/dev/null || true)" == "$family" ]]; then
 			echo "$name"
 		fi

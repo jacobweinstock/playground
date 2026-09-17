@@ -5,67 +5,67 @@
         "ContainerHierarchyTexts": [
           "Workload cluster provisioning"
         ],
-        "LeafNodeType": "It",
         "LeafNodeText": "completes all workflows successfully",
-        "State": "passed",
-        "RunTime": 460647886822
+        "LeafNodeType": "It",
+        "RunTime": 460647886822,
+        "State": "passed"
       },
       {
         "ContainerHierarchyTexts": [
           "Workload cluster provisioning"
         ],
-        "LeafNodeType": "It",
         "LeafNodeText": "has a reachable workload API server",
-        "State": "passed",
-        "RunTime": 68702876
+        "LeafNodeType": "It",
+        "RunTime": 68702876,
+        "State": "passed"
       },
       {
         "ContainerHierarchyTexts": [
           "Workload cluster provisioning"
         ],
-        "LeafNodeType": "It",
         "LeafNodeText": "deploys CNI to the workload cluster",
-        "State": "passed",
-        "RunTime": 14090323603
+        "LeafNodeType": "It",
+        "RunTime": 14090323603,
+        "State": "passed"
       },
       {
         "ContainerHierarchyTexts": [
           "Workload cluster provisioning"
         ],
-        "LeafNodeType": "It",
         "LeafNodeText": "has all nodes Ready after CNI deployment",
-        "State": "passed",
-        "RunTime": 80208181078
+        "LeafNodeType": "It",
+        "RunTime": 80208181078,
+        "State": "passed"
       },
       {
         "ContainerHierarchyTexts": [
           "Workload cluster provisioning",
           "cluster health"
         ],
-        "LeafNodeType": "It",
         "LeafNodeText": "reports all CAPI and CAPT objects ready",
-        "State": "passed",
-        "RunTime": 135332839
+        "LeafNodeType": "It",
+        "RunTime": 135332839,
+        "State": "passed"
       },
       {
         "ContainerHierarchyTexts": [
           "Workload cluster provisioning",
           "cluster health"
         ],
-        "LeafNodeType": "It",
         "LeafNodeText": "has all workload cluster pods healthy",
-        "State": "passed",
-        "RunTime": 17639703
+        "LeafNodeType": "It",
+        "RunTime": 17639703,
+        "State": "passed"
       },
       {
         "ContainerHierarchyTexts": [
           "Workload cluster provisioning",
           "cluster health"
         ],
-        "LeafNodeType": "It",
         "LeafNodeText": "has every required workload component running",
-        "State": "passed",
-        "RunTime": 65020492
+        "LeafNodeType": "It",
+        "RunTime": 65020492,
+        "State": "passed"
       }
     ]
   }

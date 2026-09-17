@@ -40,14 +40,14 @@ tasks:
       KERNEL_VER:
         sh: 'yq eval ''.captainos.kernelVersion // ""'' {{.STATE_FILE_FQ_PATH}}'
       IP_FAMILY:
-        sh: "yq eval '.ipFamily // \"ipv4\"' {{.STATE_FILE_FQ_PATH}}"
+        sh: 'yq eval ''.ipFamily // "ipv4"'' {{.STATE_FILE_FQ_PATH}}'
       # IPv6 literals must be bracketed everywhere they appear in a URL or an
       # address:port pair.
       LB_HOST2: '{{if eq .IP_FAMILY "ipv6"}}[{{.LB_IP2}}]{{else}}{{.LB_IP2}}{{end}}'
       SUBNET6:
         sh: 'yq eval ''.kind.subnet6 // ""'' {{.STATE_FILE_FQ_PATH}}'
       NAME_SERVERS:
-        sh: "printf '{%s}' \"$(yq eval '.nameServers | join(\",\")' {{.STATE_FILE_FQ_PATH}})\""
+        sh: 'printf ''{%s}'' "$(yq eval ''.nameServers | join(",")'' {{.STATE_FILE_FQ_PATH}})"'
       AGENT_IMAGE:
         sh: "yq eval '.agentImage' {{.STATE_FILE_FQ_PATH}}"
       # Empty unless this playground was built from source. The registry is only

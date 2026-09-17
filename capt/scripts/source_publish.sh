@@ -90,16 +90,16 @@ function main() {
 	# A dirty tree is never up to date: its contents can change without its
 	# version changing, so there is nothing to compare against.
 	declare up_to_date=false
-	if [[ "$dirty" != "true" ]] && [[ -f "$chart" ]] && already_published "$endpoint" "$version" "$image"; then
+	if [[ $dirty != "true" ]] && [[ -f $chart ]] && already_published "$endpoint" "$version" "$image"; then
 		up_to_date=true
 	fi
 
-	if [[ "$mode" == "--check" ]]; then
-		[[ "$up_to_date" == "true" ]]
+	if [[ $mode == "--check" ]]; then
+		[[ $up_to_date == "true" ]]
 		return $?
 	fi
 
-	if [[ "$up_to_date" == "true" ]]; then
+	if [[ $up_to_date == "true" ]]; then
 		echo "source: ${version} already built, nothing to do"
 		return 0
 	fi

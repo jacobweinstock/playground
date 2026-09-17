@@ -25,7 +25,7 @@ tasks:
       on an IPv6 /64 no other network is using.
     vars:
       IP_FAMILY:
-        sh: "yq eval '.ipFamily // \"ipv4\"' {{.STATE_FILE_FQ_PATH}}"
+        sh: 'yq eval ''.ipFamily // "ipv4"'' {{.STATE_FILE_FQ_PATH}}'
       # Empty unless built from source. Recorded on the network so `task
       # instances` can say which checkout a playground is running without
       # knowing where its state file lives.

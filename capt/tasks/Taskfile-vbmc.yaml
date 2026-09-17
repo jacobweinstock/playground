@@ -73,7 +73,7 @@ tasks:
       VBMC_CONTAINER_NAME:
         sh: "yq eval '.virtualBMC.containerName' {{.STATE_FILE_FQ_PATH}}"
       IP_FAMILY:
-        sh: "yq eval '.ipFamily // \"ipv4\"' {{.STATE_FILE_FQ_PATH}}"
+        sh: 'yq eval ''.ipFamily // "ipv4"'' {{.STATE_FILE_FQ_PATH}}'
       VBMC_FIELD: '{{if eq .IP_FAMILY "ipv6"}}GlobalIPv6Address{{else}}IPAddress{{end}}'
       VBMC_IP:
         sh: docker inspect -f '{{`{{(index .NetworkSettings.Networks "`}}{{.NETWORK_NAME}}{{`").`}}{{.VBMC_FIELD}}{{`}}`}}' {{.VBMC_CONTAINER_NAME}}

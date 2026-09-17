@@ -31,7 +31,7 @@ declare -r MAX_INDEX=255
 
 function subnet_for() {
 	declare -r index="$1"
-	if [[ "$index" -eq 0 ]]; then
+	if [[ $index -eq 0 ]]; then
 		echo "${PREFIX}::/64"
 	else
 		printf '%s:%x::/64\n' "$PREFIX" "$index"
@@ -71,7 +71,7 @@ function main() {
 	# rare, but it would have them fighting over every derived name. Better to
 	# say so than to half-build the second one.
 	declare -r holder="$(docker network ls --filter "label=${CAPT_LABEL_ID}=${instance_id}" --format '{{.Name}}' | head -1)"
-	if [[ -n "$holder" ]]; then
+	if [[ -n $holder ]]; then
 		cat >&2 <<-EOF
 			instance id ${instance_id} is already held by the network '${holder}',
 			but this playground wants to create '${network_name}'.

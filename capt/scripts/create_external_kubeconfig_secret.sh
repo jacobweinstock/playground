@@ -19,7 +19,7 @@ function tink_apiserver() {
 	# A kind node container holds both an IPv4 and an IPv6 address on a
 	# dual-stack network, and an IPv6-only management cluster has no route to
 	# the IPv4 one, so the playground's family decides which is read.
-	if [[ "$family" == "ipv6" ]]; then
+	if [[ $family == "ipv6" ]]; then
 		field="GlobalIPv6Address"
 	else
 		field="IPAddress"
@@ -30,12 +30,12 @@ function tink_apiserver() {
 	address="$(docker inspect "${cluster}-control-plane" \
 		-f "{{(index .NetworkSettings.Networks \"${network}\").${field}}}")"
 
-	if [[ -z "$address" ]]; then
+	if [[ -z $address ]]; then
 		echo "external kubeconfig: ${cluster}-control-plane has no ${field} on ${network}" >&2
 		return 1
 	fi
 
-	if [[ "$family" == "ipv6" ]]; then
+	if [[ $family == "ipv6" ]]; then
 		printf 'https://[%s]:6443' "$address"
 	else
 		printf 'https://%s:6443' "$address"

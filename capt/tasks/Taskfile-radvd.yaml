@@ -54,7 +54,7 @@ tasks:
       - "{{.OUTPUT_DIR}}/radvd.conf"
     vars:
       IP_FAMILY:
-        sh: "yq eval '.ipFamily // \"ipv4\"' {{.STATE_FILE_FQ_PATH}}"
+        sh: 'yq eval ''.ipFamily // "ipv4"'' {{.STATE_FILE_FQ_PATH}}'
       BRIDGE_NAME:
         sh: "yq eval '.kind.bridgeName' {{.STATE_FILE_FQ_PATH}}"
       SUBNET6:
@@ -86,7 +86,7 @@ tasks:
       Start radvd in the host network namespace on the kind bridge.
     vars:
       IP_FAMILY:
-        sh: "yq eval '.ipFamily // \"ipv4\"' {{.STATE_FILE_FQ_PATH}}"
+        sh: 'yq eval ''.ipFamily // "ipv4"'' {{.STATE_FILE_FQ_PATH}}'
       CONTAINER_NAME:
         sh: "yq eval '.names.radvd' {{.STATE_FILE_FQ_PATH}}"
       # Same base image as the NAT64 tasks. The previously used

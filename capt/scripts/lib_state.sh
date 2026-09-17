@@ -19,7 +19,7 @@ function state_field() {
 	declare -r file="$1" path="$2"
 
 	declare value
-	if ! value="$(yq eval -e "$path" "$file" 2>/dev/null)" || [[ -z "$value" ]]; then
+	if ! value="$(yq eval -e "$path" "$file" 2>/dev/null)" || [[ -z $value ]]; then
 		echo "state: ${file} has no ${path}" >&2
 		return 1
 	fi

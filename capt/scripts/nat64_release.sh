@@ -35,7 +35,7 @@ function main() {
 	declare -r instance_id="$(yq eval '.instance // ""' "$state_file")"
 	declare -r dns64_container="$(yq eval '.names.dns64 // ""' "$state_file")"
 
-	if [[ -n "$dns64_container" ]]; then
+	if [[ -n $dns64_container ]]; then
 		docker rm -f "$dns64_container" >/dev/null 2>&1 || true
 	fi
 

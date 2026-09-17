@@ -28,7 +28,7 @@ function main() {
 	container="$(yq eval '.virtualBMC.containerName // ""' "$state_file" 2>/dev/null || true)"
 	network="$(yq eval '.names.network // ""' "$state_file" 2>/dev/null || true)"
 
-	if [[ -z "$container" || -z "$network" ]]; then
+	if [[ -z $container || -z $network ]]; then
 		echo "vbmc: ${state_file} records no vBMC to release" >&2
 		return 0
 	fi
@@ -41,7 +41,7 @@ function main() {
 	# ports reserved against every other playground sharing the container.
 	declare name
 	while read -r name; do
-		[[ -n "$name" ]] || continue
+		[[ -n $name ]] || continue
 		docker exec "$container" vbmc delete "$name" >/dev/null 2>&1 || true
 	done < <(yq eval '.vm.details | keys | .[]' "$state_file" 2>/dev/null || true)
 

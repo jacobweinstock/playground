@@ -64,7 +64,7 @@ tasks:
       itself, and turning it off would break unrelated containers.
     vars:
       IP_FAMILY:
-        sh: "yq eval '.ipFamily // \"ipv4\"' {{.STATE_FILE_FQ_PATH}}"
+        sh: 'yq eval ''.ipFamily // "ipv4"'' {{.STATE_FILE_FQ_PATH}}'
     cmds:
       - >-
         docker run --rm --network host --privileged --entrypoint /bin/sh
@@ -87,7 +87,7 @@ tasks:
       publicly anyway.
     vars:
       IP_FAMILY:
-        sh: "yq eval '.ipFamily // \"ipv4\"' {{.STATE_FILE_FQ_PATH}}"
+        sh: 'yq eval ''.ipFamily // "ipv4"'' {{.STATE_FILE_FQ_PATH}}'
       CONTAINER_NAME:
         sh: "yq eval '.names.dns64' {{.STATE_FILE_FQ_PATH}}"
       IMAGE: "{{.COREDNS_IMAGE}}"
@@ -149,7 +149,7 @@ tasks:
       and for the per-playground bridge address it also repairs.
     vars:
       IP_FAMILY:
-        sh: "yq eval '.ipFamily // \"ipv4\"' {{.STATE_FILE_FQ_PATH}}"
+        sh: 'yq eval ''.ipFamily // "ipv4"'' {{.STATE_FILE_FQ_PATH}}'
       CONTAINER_NAME: "{{.NAT64_CONTAINER}}"
       NAT64_PREFIX:
         sh: 'yq eval ''.nat64.prefix // ""'' {{.STATE_FILE_FQ_PATH}}'
@@ -174,7 +174,7 @@ tasks:
       The caller supplies KUBECONFIG, so this runs once per kind cluster.
     vars:
       IP_FAMILY:
-        sh: "yq eval '.ipFamily // \"ipv4\"' {{.STATE_FILE_FQ_PATH}}"
+        sh: 'yq eval ''.ipFamily // "ipv4"'' {{.STATE_FILE_FQ_PATH}}'
       DNS64_IP:
         sh: 'yq eval ''.nat64.dns64IP // ""'' {{.STATE_FILE_FQ_PATH}}'
     cmds:
@@ -216,7 +216,7 @@ tasks:
       Forwarding sysctls are left on -- see the `forwarding` task.
     vars:
       DNS64_CONTAINER:
-        sh: "yq eval '.names.dns64 // \"\"' {{.STATE_FILE_FQ_PATH}} 2>/dev/null || true"
+        sh: 'yq eval ''.names.dns64 // ""'' {{.STATE_FILE_FQ_PATH}} 2>/dev/null || true'
     cmds:
       - "{{.ROOT_DIR}}/scripts/nat64_release.sh {{.STATE_FILE_FQ_PATH}} {{.CLEANUP_IMAGE}} {{.TUN_DEV}} {{.TAYGA_POOL}} {{.NAT64_CONTAINER}}"
     status:

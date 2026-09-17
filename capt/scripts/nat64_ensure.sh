@@ -37,7 +37,7 @@ source "${SCRIPT_DIR}/lib_docker_net.sh"
 function repair_bridge_address() {
 	declare -r image="$1" gateway6="$2" bridge="$3" prefix_len="$4"
 
-	[[ -n "$gateway6" && -n "$bridge" && -n "$prefix_len" ]] || return 0
+	[[ -n $gateway6 && -n $bridge && -n $prefix_len ]] || return 0
 
 	docker run --rm --network host --privileged --entrypoint /bin/sh "$image" \
 		-c "${NET_PKGS_IPROUTE}; ip -6 addr add ${gateway6}/${prefix_len} dev ${bridge} 2>/dev/null || true" \

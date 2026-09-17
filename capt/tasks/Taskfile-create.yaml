@@ -80,7 +80,7 @@ tasks:
       ENABLED:
         sh: "yq eval '.registryMirror.enabled // false' {{.STATE_FILE_FQ_PATH}}"
       IP_FAMILY:
-        sh: "yq eval '.ipFamily // \"ipv4\"' {{.STATE_FILE_FQ_PATH}}"
+        sh: 'yq eval ''.ipFamily // "ipv4"'' {{.STATE_FILE_FQ_PATH}}'
       CLUSTER_NAME:
         sh: "yq eval '.names.kindCluster' {{.STATE_FILE_FQ_PATH}}"
       KUBECONFIG:
@@ -106,7 +106,7 @@ tasks:
       ENABLED:
         sh: "yq eval '.registryMirror.enabled // false' {{.STATE_FILE_FQ_PATH}}"
       IP_FAMILY:
-        sh: "yq eval '.ipFamily // \"ipv4\"' {{.STATE_FILE_FQ_PATH}}"
+        sh: 'yq eval ''.ipFamily // "ipv4"'' {{.STATE_FILE_FQ_PATH}}'
       EXTERNAL_TINKERBELL:
         sh: "yq eval '.externalTinkerbell // false' {{.STATE_FILE_FQ_PATH}}"
       TINK_CLUSTER_NAME:
@@ -138,13 +138,13 @@ tasks:
       # address family has to happen outside the template.
       NET_IPAM: "docker network inspect {{.NETWORK_NAME}} -f '{{`{{json .IPAM.Config}}`}}'"
       GATEWAY_IP:
-        sh: "{{.NET_IPAM}} | yq -p json -r '[.[] | select(.Subnet | test(\":\") | not)] | .[0].Gateway // \"\"'"
+        sh: '{{.NET_IPAM}} | yq -p json -r ''[.[] | select(.Subnet | test(":") | not)] | .[0].Gateway // ""'''
       GATEWAY_IP6:
-        sh: "{{.NET_IPAM}} | yq -p json -r '[.[] | select(.Subnet | test(\":\"))] | .[0].Gateway // \"\"'"
+        sh: '{{.NET_IPAM}} | yq -p json -r ''[.[] | select(.Subnet | test(":"))] | .[0].Gateway // ""'''
       # The bridge /64 that radvd advertises and that every playground IPv6
       # address is built from.
       SUBNET6:
-        sh: "{{.NET_IPAM}} | yq -p json -r '[.[] | select(.Subnet | test(\":\"))] | .[0].Subnet // \"\"'"
+        sh: '{{.NET_IPAM}} | yq -p json -r ''[.[] | select(.Subnet | test(":"))] | .[0].Subnet // ""'''
       NETWORK_ID:
         sh: "docker network inspect -f '{{`{{.Id}}`}}' {{.NETWORK_NAME}}"
       BRIDGE_NAME: "br-{{substr 0 12 .NETWORK_ID}}"
@@ -177,7 +177,7 @@ tasks:
       - rm -f {{.OUTPUT_DIR}}/hardware-*.yaml
       - "cue vet ./cue/infra yaml: {{.STATE_FILE_FQ_PATH}} -l 'values:'"
       - for: { var: NAMES }
-        cmd: "cue export ./cue/infra yaml: {{.STATE_FILE_FQ_PATH}} -l 'values:' -e 'outHardware[\"{{.ITEM}}\"]' --out yaml > {{.OUTPUT_DIR}}/hardware-{{.ITEM}}.yaml"
+        cmd: 'cue export ./cue/infra yaml: {{.STATE_FILE_FQ_PATH}} -l ''values:'' -e ''outHardware["{{.ITEM}}"]'' --out yaml > {{.OUTPUT_DIR}}/hardware-{{.ITEM}}.yaml'
 
   bmc-machine-cr:
     run: once
@@ -197,7 +197,7 @@ tasks:
       - rm -f {{.OUTPUT_DIR}}/bmc-machine-*.yaml
       - "cue vet ./cue/infra yaml: {{.STATE_FILE_FQ_PATH}} -l 'values:'"
       - for: { var: NAMES }
-        cmd: "cue export ./cue/infra yaml: {{.STATE_FILE_FQ_PATH}} -l 'values:' -e 'outBmcMachines[\"{{.ITEM}}\"]' --out yaml > {{.OUTPUT_DIR}}/bmc-machine-{{.ITEM}}.yaml"
+        cmd: 'cue export ./cue/infra yaml: {{.STATE_FILE_FQ_PATH}} -l ''values:'' -e ''outBmcMachines["{{.ITEM}}"]'' --out yaml > {{.OUTPUT_DIR}}/bmc-machine-{{.ITEM}}.yaml'
 
   bmc-secret:
     run: once
@@ -231,7 +231,7 @@ tasks:
           KUBECONFIG: "{{.KUBECONFIG}}"
       - task: nat64:cluster-dns
         vars:
-          KUBECONFIG: '{{if .TINK_KUBECONFIG}}{{.TINK_KUBECONFIG}}{{else}}{{.KUBECONFIG}}{{end}}'
+          KUBECONFIG: "{{if .TINK_KUBECONFIG}}{{.TINK_KUBECONFIG}}{{else}}{{.KUBECONFIG}}{{end}}"
 
   deploy-tinkerbell-helm-chart:
     run: once

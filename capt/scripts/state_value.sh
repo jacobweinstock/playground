@@ -25,10 +25,10 @@ function main() {
 	declare -r instance_id="$3"
 	declare -r field="$4"
 
-	if [[ -f "$state_file" ]]; then
+	if [[ -f $state_file ]]; then
 		declare value
 		value="$(yq eval ".${field} // \"\"" "$state_file")"
-		if [[ -n "$value" && "$value" != "null" ]]; then
+		if [[ -n $value && $value != "null" ]]; then
 			echo "$value"
 			return 0
 		fi

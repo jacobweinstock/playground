@@ -39,13 +39,13 @@ function main() {
 	declare failed=0 status
 	while IFS=$',' read -r name port; do
 		status="$(vbmc_status_of "$container_name" "$name")"
-		if [[ "$status" != "running" ]]; then
+		if [[ $status != "running" ]]; then
 			echo "vbmc for ${name} is '${status:-missing}' on port ${port}, not running" >&2
 			failed=1
 		fi
 	done < <(yq e '.vm.details.[] | [key, .bmc.port] | @csv' "$STATE_FILE")
 
-	if [[ "$failed" -ne 0 ]]; then
+	if [[ $failed -ne 0 ]]; then
 		cat >&2 <<-EOF
 
 			The shared vBMC could not serve every VM. The usual cause is another

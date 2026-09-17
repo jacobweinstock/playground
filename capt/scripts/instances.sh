@@ -24,10 +24,10 @@ function main() {
 	declare -a rows=()
 	declare network id family subnet6 clusters source
 	while read -r network; do
-		[[ -n "$network" ]] || continue
+		[[ -n $network ]] || continue
 
 		id="$(docker network inspect "$network" -f "{{index .Labels \"${CAPT_LABEL_ID}\"}}" 2>/dev/null || true)"
-		if [[ "$quiet" == "--quiet" ]]; then
+		if [[ $quiet == "--quiet" ]]; then
 			echo "$id"
 			continue
 		fi
@@ -43,9 +43,9 @@ function main() {
 		rows+=("${id}|${network}|${family}|${subnet6:--}|${clusters}|${source}")
 	done < <(capt_networks)
 
-	[[ "$quiet" != "--quiet" ]] || return 0
+	[[ $quiet != "--quiet" ]] || return 0
 
-	if [[ "${#rows[@]}" -eq 0 ]]; then
+	if [[ ${#rows[@]} -eq 0 ]]; then
 		echo "No playgrounds running."
 		# Still worth saying: the checkouts survive teardown, so with nothing
 		# running they are the only thing left on the host to account for.
@@ -72,20 +72,23 @@ function main() {
 # the playground has left on the host, and marked with the playgrounds using
 # them so it is clear which are only taking up disk.
 function source_cache() {
-	if [[ ! -d "$CACHE_DIR" ]]; then
+	if [[ ! -d $CACHE_DIR ]]; then
 		return 0
 	fi
 
 	declare -a rows=() unused=()
 	declare dir users
 	for dir in "$CACHE_DIR"/*/; do
-		[[ -d "$dir" ]] || continue
+		[[ -d $dir ]] || continue
 		users="$(instances_using "$dir")"
-		[[ -n "$users" ]] || { users="(unused)"; unused+=("$(basename "$dir")"); }
+		[[ -n $users ]] || {
+			users="(unused)"
+			unused+=("$(basename "$dir")")
+		}
 		rows+=("  $(du -sh "$dir" 2>/dev/null | cut -f1)|$(basename "$dir")|$(git -C "$dir" remote get-url origin 2>/dev/null || echo '?')|${users}")
 	done
 
-	[[ "${#rows[@]}" -gt 0 ]] || return 0
+	[[ ${#rows[@]} -gt 0 ]] || return 0
 
 	echo
 	echo "Source checkouts ($(du -sh "$CACHE_DIR" 2>/dev/null | cut -f1) in ${CACHE_DIR}, kept across teardowns):"
@@ -96,7 +99,7 @@ function source_cache() {
 		printf '%s\n' "${rows[@]}"
 	} | column -t -s '|'
 
-	if [[ "${#unused[@]}" -gt 0 ]]; then
+	if [[ ${#unused[@]} -gt 0 ]]; then
 		echo
 		echo "  ${#unused[@]} unused; remove with:"
 		# The lock file sits beside the checkout rather than inside it, so a
@@ -112,7 +115,7 @@ function instances_using() {
 
 	declare network ids=""
 	while read -r network; do
-		[[ -n "$network" ]] || continue
+		[[ -n $network ]] || continue
 		if [[ "$(source_dir_of "$network")" == "$dir" ]]; then
 			ids+="${ids:+,}$(docker network inspect "$network" -f "{{index .Labels \"${CAPT_LABEL_ID}\"}}" 2>/dev/null || true)"
 		fi
@@ -131,14 +134,17 @@ function source_dir_of() {
 function repo_label() {
 	declare -r dir="${1%/}"
 
-	if [[ -z "$dir" ]]; then
+	if [[ -z $dir ]]; then
 		echo "-"
 		return 0
 	fi
 
 	declare repo
 	repo="$(git -C "$dir" remote get-url origin 2>/dev/null || true)"
-	[[ -n "$repo" ]] || { echo "$dir"; return 0; }
+	[[ -n $repo ]] || {
+		echo "$dir"
+		return 0
+	}
 
 	repo="${repo%.git}"
 	echo "$(basename "$(dirname "$repo")")/$(basename "$repo")"

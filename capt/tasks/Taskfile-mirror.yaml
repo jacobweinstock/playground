@@ -67,7 +67,7 @@ tasks:
       ENABLED:
         sh: "yq eval '.registryMirror.enabled // false' {{.STATE_FILE_FQ_PATH}}"
       IP_FAMILY:
-        sh: "yq eval '.ipFamily // \"ipv4\"' {{.STATE_FILE_FQ_PATH}}"
+        sh: 'yq eval ''.ipFamily // "ipv4"'' {{.STATE_FILE_FQ_PATH}}'
       KIND_CONFIG: "{{.OUTPUT_DIR}}/kind-config.yaml"
       CERTS_DIR: "{{.OUTPUT_DIR}}/certs.d"
     cmds:

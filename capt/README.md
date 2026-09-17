@@ -117,11 +117,11 @@ even for a playground whose state file was lost.
 **Shared services.** Some things are per host rather than per playground, and
 are created on demand and removed with the last playground that needs them:
 
-| Service | Shared because | Released when |
-| --- | --- | --- |
-| vBMC (`capt-vbmc`) | it drives libvirt, which is per host | no playground network is attached to it |
-| NAT64 (`nat64`) | its TUN device and routes are host-wide | no IPv6 playground is left |
-| libvirt pool (`default`) | one directory pool serves everyone | no playground is left, and the playground created it |
+| Service                  | Shared because                          | Released when                                        |
+| ------------------------ | --------------------------------------- | ---------------------------------------------------- |
+| vBMC (`capt-vbmc`)       | it drives libvirt, which is per host    | no playground network is attached to it              |
+| NAT64 (`nat64`)          | its TUN device and routes are host-wide | no IPv6 playground is left                           |
+| libvirt pool (`default`) | one directory pool serves everyone      | no playground is left, and the playground created it |
 
 Because one vBMC serves everyone, its credentials are fixed rather than
 configurable, and BMC ports are assigned per playground from what is free.
@@ -226,12 +226,12 @@ naming only a `ref` means "upstream at that ref". `ref` takes a branch, tag or
 commit, and defaults to the repository's default branch. How the two combine
 matters:
 
-| `repo` | `ref` | What happens |
-| --- | --- | --- |
-| omitted | set | Upstream Tinkerbell at that ref |
-| path | omitted | Built **where it sits**, uncommitted changes included |
-| path | set | Cloned into the cache and built there; your worktree is untouched |
-| URL | either | Cloned into the cache |
+| `repo`  | `ref`   | What happens                                                      |
+| ------- | ------- | ----------------------------------------------------------------- |
+| omitted | set     | Upstream Tinkerbell at that ref                                   |
+| path    | omitted | Built **where it sits**, uncommitted changes included             |
+| path    | set     | Cloned into the cache and built there; your worktree is untouched |
+| URL     | either  | Cloned into the cache                                             |
 
 The e2e runner takes the same two values as flags, so everything here applies
 to it as well:
@@ -320,14 +320,14 @@ vocabulary, so a name says exactly which specs run.
 
 ### Commands
 
-| Command | What it does |
-| --- | --- |
-| `run <combo>...` | run the matrix for one or more combos |
-| `list` | show the combos and what each exercises |
-| `config <combo>...` | print the `config.yaml` a combo would use |
-| `clean [<combo>...]` | delete a playground a run left behind |
-| `version` | print the runner version |
-| `help [command]` | help for any command |
+| Command              | What it does                              |
+| -------------------- | ----------------------------------------- |
+| `run <combo>...`     | run the matrix for one or more combos     |
+| `list`               | show the combos and what each exercises   |
+| `config <combo>...`  | print the `config.yaml` a combo would use |
+| `clean [<combo>...]` | delete a playground a run left behind     |
+| `version`            | print the runner version                  |
+| `help [command]`     | help for any command                      |
 
 Each command has its own flags and its own help:
 
@@ -410,8 +410,8 @@ which is what an interactive `task create-playground` uses. Your own
 
 ### Deleting reads the state file, not the config
 
-`config.yaml` says what a playground *would* be built from; `.state` records
-what a run *did* build. Every `delete-playground` task reads `.state` — the
+`config.yaml` says what a playground _would_ be built from; `.state` records
+what a run _did_ build. Every `delete-playground` task reads `.state` — the
 cluster names, VM names, BMC container, docker network and output directory
 all come from it. Edit `config.yaml` after creating a playground and teardown
 still removes what is actually running.

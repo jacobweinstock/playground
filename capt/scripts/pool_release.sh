@@ -44,7 +44,7 @@ function main() {
 	fi
 
 	declare -r target="$(pool_target "$pool")"
-	if [[ "$target" != "$expected_target" ]]; then
+	if [[ $target != "$expected_target" ]]; then
 		echo "leaving the '${pool}' storage pool alone: it points at ${target:-an unknown path}, not ${expected_target}, so the playground did not create it"
 		return 0
 	fi
@@ -56,7 +56,7 @@ function main() {
 
 	declare vol
 	while read -r vol; do
-		[[ -n "$vol" ]] || continue
+		[[ -n $vol ]] || continue
 		virsh --connect "$LIBVIRT_URI" vol-delete --pool "$pool" "$vol" >/dev/null 2>&1 || true
 	done < <(virsh --connect "$LIBVIRT_URI" -q vol-list "$pool" 2>/dev/null | awk '{print $1}')
 

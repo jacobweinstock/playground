@@ -29,7 +29,7 @@ function main() {
 
 	KUBECONFIG="$KUBECONFIG_PATH" kubectl apply -f "$MANIFEST"
 
-	if [[ "$IP_FAMILY" != "ipv6" ]]; then
+	if [[ $IP_FAMILY != "ipv6" ]]; then
 		return 0
 	fi
 

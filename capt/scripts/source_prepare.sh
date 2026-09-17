@@ -35,7 +35,7 @@ function cache_dir_for() {
 function is_local_repo() {
 	declare -r repo="$1"
 
-	[[ -d "$repo" ]]
+	[[ -d $repo ]]
 }
 
 # Clone once, then fetch. Concurrent playgrounds may resolve the same repo at
@@ -56,14 +56,14 @@ function sync_checkout() {
 
 	git -C "$dir" fetch --quiet --force --tags origin '+refs/heads/*:refs/remotes/origin/*' 2>/dev/null || true
 
-	if [[ -n "$ref" ]]; then
+	if [[ -n $ref ]]; then
 		declare resolved
 		# A branch has to be matched against the remote: the local branch of the
 		# same name is whatever the last checkout left behind.
 		resolved="$(git -C "$dir" rev-parse --verify --quiet "origin/${ref}^{commit}" ||
 			git -C "$dir" rev-parse --verify --quiet "${ref}^{commit}" || true)"
 
-		if [[ -z "$resolved" ]]; then
+		if [[ -z $resolved ]]; then
 			echo "source: cannot resolve ref '${ref}' in ${repo}" >&2
 			return 1
 		fi
@@ -98,7 +98,7 @@ function main() {
 		repo="$repo_in"
 	fi
 
-	if is_local_repo "$repo" && [[ -z "$ref" ]]; then
+	if is_local_repo "$repo" && [[ -z $ref ]]; then
 		dir="$repo"
 		worktree_is_dirty "$dir" && dirty=true
 	else
@@ -113,7 +113,7 @@ function main() {
 	commit="$(git -C "$dir" rev-parse HEAD)"
 	version="$(version_of "$dir")"
 
-	if [[ -z "$version" ]]; then
+	if [[ -z $version ]]; then
 		echo "source: ${repo} at ${ref:-HEAD} produced no version; too old to build from?" >&2
 		return 1
 	fi

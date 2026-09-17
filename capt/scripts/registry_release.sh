@@ -31,11 +31,11 @@ function main() {
 	container="$(yq eval '.source.registryContainer // ""' "$state_file" 2>/dev/null || true)"
 	network="$(yq eval '.names.network // ""' "$state_file" 2>/dev/null || true)"
 
-	if [[ -z "$container" || -z "$network" ]]; then
+	if [[ -z $container || -z $network ]]; then
 		return 0
 	fi
 
-	if [[ -z "$container" ]] || ! docker inspect "$container" >/dev/null 2>&1; then
+	if [[ -z $container ]] || ! docker inspect "$container" >/dev/null 2>&1; then
 		return 0
 	fi
 

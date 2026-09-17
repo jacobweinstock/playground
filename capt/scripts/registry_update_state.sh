@@ -29,7 +29,7 @@ function registry_endpoint() {
 	network="$(state_field "$state_file" '.names.network')"
 	family="$(yq eval '.ipFamily // "ipv4"' "$state_file")"
 
-	if [[ "$family" == "ipv6" ]]; then
+	if [[ $family == "ipv6" ]]; then
 		field="GlobalIPv6Address"
 	else
 		field="IPAddress"
@@ -40,12 +40,12 @@ function registry_endpoint() {
 	address="$(docker inspect "$container" \
 		-f "{{(index .NetworkSettings.Networks \"${network}\").${field}}}")"
 
-	if [[ -z "$address" ]]; then
+	if [[ -z $address ]]; then
 		echo "registry: ${container} has no ${field} on ${network}" >&2
 		return 1
 	fi
 
-	if [[ "$family" == "ipv6" ]]; then
+	if [[ $family == "ipv6" ]]; then
 		printf '[%s]:%s' "$address" "$port"
 	else
 		printf '%s:%s' "$address" "$port"
@@ -59,7 +59,7 @@ function main() {
 	endpoint="$(registry_endpoint "$state_file" "$port")"
 	version="$(state_field "$state_file" '.source.version')"
 
-	if [[ "$mode" == "--check" ]]; then
+	if [[ $mode == "--check" ]]; then
 		[[ "$(yq eval '.source.registry // ""' "$state_file")" == "$endpoint" ]]
 		return $?
 	fi
