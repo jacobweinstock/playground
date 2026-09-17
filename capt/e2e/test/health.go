@@ -12,6 +12,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -227,7 +228,10 @@ func ExpectWorkloadComponentsRunning(ctx context.Context, c client.Client, compo
 // DumpClusterState writes management and workload cluster state to dir. Failures
 // to collect are reported but never fail the spec — this runs after something
 // has already gone wrong.
-func DumpClusterState(ctx context.Context, dir, mgmtKubeconfig, workloadKubeconfig string) {
+//
+// tinkKubeconfig is empty in colocated mode, where the Tinkerbell and BMC
+// objects live in the management cluster instead of a cluster of their own.
+func DumpClusterState(ctx context.Context, dir, mgmtKubeconfig, tinkKubeconfig, workloadKubeconfig string) {
 	if dir == "" {
 		return
 	}
@@ -241,6 +245,10 @@ func DumpClusterState(ctx context.Context, dir, mgmtKubeconfig, workloadKubeconf
 			"get", "pods", "-A", "-o", "yaml")
 	}
 
+	if tink := firstNonEmpty(tinkKubeconfig, mgmtKubeconfig); tink != "" {
+		dumpTinkerbellState(ctx, dir, tink)
+	}
+
 	if workloadKubeconfig == "" {
 		return
 	}
@@ -250,6 +258,70 @@ func DumpClusterState(ctx context.Context, dir, mgmtKubeconfig, workloadKubeconf
 		"get", "nodes", "-o", "yaml")
 	kubectlDump(ctx, workloadKubeconfig, filepath.Join(dir, "workload-events.txt"),
 		"get", "events", "-A", "--sort-by", ".lastTimestamp")
+}
+
+// dumpTinkerbellState collects the objects that carry the reason for a
+// provisioning failure. A Workflow's BootJobFailed condition says only "job
+// failed"; the reason is on the bmc Task, and which provider bmclib chose and
+// why it could not connect appears only in the controller log.
+func dumpTinkerbellState(ctx context.Context, dir, kubeconfig string) {
+	kubectlDump(ctx, kubeconfig, filepath.Join(dir, "tink-objects.yaml"),
+		"get", "workflows.tinkerbell.org,hardware.tinkerbell.org,jobs.bmc.tinkerbell.org,tasks.bmc.tinkerbell.org,machines.bmc.tinkerbell.org",
+		"-A", "-o", "yaml")
+	kubectlDump(ctx, kubeconfig, filepath.Join(dir, "tink-events.txt"),
+		"get", "events", "-A", "--sort-by", ".lastTimestamp")
+	kubectlDump(ctx, kubeconfig, filepath.Join(dir, "tink-controller.log"),
+		"logs", "-n", "tinkerbell", "-l", "stack=tinkerbell",
+		"--all-containers", "--tail", "-1", "--prefix")
+}
+
+// DumpVirtualBMCLogs writes the vBMC container's log to dir. The BMC lives in a
+// container rather than the cluster, so a failed power or virtual-media action
+// leaves no trace in any kubeconfig.
+func DumpVirtualBMCLogs(ctx context.Context, dir, container string) {
+	if dir == "" || container == "" {
+		return
+	}
+	cmd := exec.CommandContext(ctx, "docker", "logs", "--tail", "500", container)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		GinkgoWriter.Printf("docker logs %s failed: %v\n", container, err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "vbmc.log"), out, 0o600); err != nil {
+		GinkgoWriter.Printf("failed writing vbmc.log: %v\n", err)
+	}
+}
+
+func firstNonEmpty(vals ...string) string {
+	for _, v := range vals {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
+// virtualBMCContainer reads the vBMC container name out of the playground's
+// state file. Returns empty on any failure so a dump never breaks a teardown.
+func virtualBMCContainer(stateFilePath string) string {
+	if stateFilePath == "" {
+		return ""
+	}
+	data, err := os.ReadFile(stateFilePath)
+	if err != nil {
+		GinkgoWriter.Printf("reading %s for vbmc container name: %v\n", stateFilePath, err)
+		return ""
+	}
+	var state struct {
+		VirtualBMC struct {
+			ContainerName string `yaml:"containerName"`
+		} `yaml:"virtualBMC"`
+	}
+	if err := yaml.Unmarshal(data, &state); err != nil {
+		GinkgoWriter.Printf("parsing %s for vbmc container name: %v\n", stateFilePath, err)
+		return ""
+	}
+	return state.VirtualBMC.ContainerName
 }
 
 func kubectlDump(ctx context.Context, kubeconfig, dest string, args ...string) {

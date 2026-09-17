@@ -46,7 +46,8 @@ var _ = Describe("Workload cluster provisioning", Label("provisioning"), Ordered
 
 	AfterEach(func(ctx SpecContext) {
 		if CurrentSpecReport().Failed() {
-			DumpClusterState(ctx, artifactsDir, mgmtKubeconfig, workloadKubeconfig)
+			DumpClusterState(ctx, artifactsDir, mgmtKubeconfig, tinkKubeconfig, workloadKubeconfig)
+			DumpVirtualBMCLogs(ctx, artifactsDir, virtualBMCContainer(stateFile))
 		}
 	})
 
