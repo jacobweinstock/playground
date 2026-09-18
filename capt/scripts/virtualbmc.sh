@@ -19,6 +19,13 @@ function vbmc_status_of() {
 		awk -F'|' -v want="$want" 'NF >= 5 { gsub(/ /, "", $2); gsub(/ /, "", $3); if ($2 == want) print $3 }'
 }
 
+function vbmc_port_of() {
+	declare -r container="$1" want="$2"
+
+	docker exec "$container" vbmc list 2>/dev/null |
+		awk -F'|' -v want="$want" 'NF >= 5 { gsub(/ /, "", $2); gsub(/ /, "", $5); if ($2 == want) print $5 }'
+}
+
 function main() {
 	declare -r STATE_FILE="$1"
 
@@ -26,11 +33,24 @@ function main() {
 	declare -r password=$(yq eval '.virtualBMC.pass' "$STATE_FILE")
 	declare -r container_name=$(yq eval '.virtualBMC.containerName' "$STATE_FILE")
 
-	declare name port
+	declare name port status registered
 	while IFS=$',' read -r name port; do
+		status="$(vbmc_status_of "$container_name" "$name")"
+		registered="$(vbmc_port_of "$container_name" "$name")"
+
+		# An entry that failed to bind keeps the port it failed on, so a re-run
+		# carrying a freshly assigned one has to replace the registration rather
+		# than keep it. Without this the retry the error below promises is not
+		# one: the same conflicted port would be started again.
+		if [[ -n $status ]] && { [[ $status == "error" ]] || [[ $registered != "$port" ]]; }; then
+			docker exec "$container_name" vbmc stop "$name" >/dev/null 2>&1 || true
+			docker exec "$container_name" vbmc delete "$name"
+			status=""
+		fi
+
 		# The container is shared and outlives any one playground, so a re-run
 		# can find its own entries already there; adding twice is an error.
-		if [[ -z "$(vbmc_status_of "$container_name" "$name")" ]]; then
+		if [[ -z $status ]]; then
 			docker exec "$container_name" vbmc add --username "$username" --password "$password" --port "$port" "$name"
 		fi
 		docker exec "$container_name" vbmc start "$name"

@@ -324,6 +324,35 @@ func virtualBMCContainer(stateFilePath string) string {
 	return state.VirtualBMC.ContainerName
 }
 
+// machineCounts reads the node counts out of the playground's state file. A
+// supplied --config can ask for counts the suite's own config knows nothing
+// about, and it is the built playground the assertions have to match.
+func machineCounts(stateFilePath string) (controlPlanes, workers int, ok bool) {
+	if stateFilePath == "" {
+		return 0, 0, false
+	}
+	data, err := os.ReadFile(stateFilePath)
+	if err != nil {
+		GinkgoWriter.Printf("reading %s for machine counts: %v\n", stateFilePath, err)
+		return 0, 0, false
+	}
+	var state struct {
+		Counts struct {
+			ControlPlanes int `yaml:"controlPlanes"`
+			Workers       int `yaml:"workers"`
+		} `yaml:"counts"`
+	}
+	if err := yaml.Unmarshal(data, &state); err != nil {
+		GinkgoWriter.Printf("parsing %s for machine counts: %v\n", stateFilePath, err)
+		return 0, 0, false
+	}
+	// Spares are built but never join, so they are deliberately not counted.
+	if state.Counts.ControlPlanes < 1 {
+		return 0, 0, false
+	}
+	return state.Counts.ControlPlanes, state.Counts.Workers, true
+}
+
 func kubectlDump(ctx context.Context, kubeconfig, dest string, args ...string) {
 	cmd := exec.CommandContext(ctx, "kubectl", append([]string{"--kubeconfig", kubeconfig}, args...)...)
 	out, err := cmd.CombinedOutput()

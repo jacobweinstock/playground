@@ -62,17 +62,27 @@ function ports_in_use() {
 
 # Ports this playground already holds, so a re-run keeps the ports its CRs and
 # registrations were built with rather than shuffling them.
+#
+# An entry in `error` state is not held: vbmc could not bind that port, so
+# reusing it would fail the same way and a re-run could never recover. Treating
+# it as absent is what sends the caller off to assign a free one, which is the
+# recovery virtualbmc.sh tells the user to expect.
 function existing_ports_for() {
 	declare -r container="$1" state_file="$2"
 
 	declare listing
 	listing="$(docker exec "$container" vbmc list 2>/dev/null)" || return 1
 
-	declare name port
+	declare name entry status port
 	while read -r name; do
 		[[ -n $name ]] || continue
-		port="$(awk -F'|' -v want="$name" 'NF >= 5 { gsub(/ /, "", $2); gsub(/ /, "", $5); if ($2 == want) print $5 }' <<<"$listing")"
+		entry="$(awk -F'|' -v want="$name" 'NF >= 5 {
+			gsub(/ /, "", $2); gsub(/ /, "", $3); gsub(/ /, "", $5)
+			if ($2 == want) print $3, $5
+		}' <<<"$listing")"
+		read -r status port <<<"$entry"
 		[[ -n $port ]] || return 1
+		[[ $status != "error" ]] || return 1
 		echo "${name},${port}"
 	done < <(yq eval '.vm.details | keys | .[]' "$state_file")
 }

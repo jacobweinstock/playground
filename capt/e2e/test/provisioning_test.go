@@ -41,6 +41,11 @@ var _ = Describe("Workload cluster provisioning", Label("provisioning"), Ordered
 		}
 		controlPlanes = e2eConfig.GetVariableInt("CONTROL_PLANE_MACHINE_COUNT", controlPlanes)
 		workers = e2eConfig.GetVariableInt("WORKER_MACHINE_COUNT", workers)
+		// Outranks the suite's config, which is fixed at 1+1 and says nothing
+		// about a playground built from a supplied --config.
+		if cp, w, ok := machineCounts(stateFile); ok {
+			controlPlanes, workers = cp, w
+		}
 		expectedNodes = controlPlanes + workers
 	})
 

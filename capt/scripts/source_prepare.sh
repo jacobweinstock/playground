@@ -54,10 +54,15 @@ function sync_checkout() {
 		git clone --quiet "$repo" "$dir"
 	fi
 
-	git -C "$dir" fetch --quiet --force --tags origin '+refs/heads/*:refs/remotes/origin/*' 2>/dev/null || true
+	# A swallowed failure here resolves against whatever the cache last saw, so
+	# a moved branch would be reported as a successful run of the wrong commit.
+	if ! git -C "$dir" fetch --quiet --force --tags origin '+refs/heads/*:refs/remotes/origin/*'; then
+		echo "source: cannot refresh ${repo}; the cached checkout may be stale" >&2
+		return 1
+	fi
 
+	declare resolved
 	if [[ -n $ref ]]; then
-		declare resolved
 		# A branch has to be matched against the remote: the local branch of the
 		# same name is whatever the last checkout left behind.
 		resolved="$(git -C "$dir" rev-parse --verify --quiet "origin/${ref}^{commit}" ||
@@ -67,8 +72,19 @@ function sync_checkout() {
 			echo "source: cannot resolve ref '${ref}' in ${repo}" >&2
 			return 1
 		fi
-		git -C "$dir" checkout --quiet --detach "$resolved"
+	else
+		# No ref means the repo's default branch, which a cached clone is only
+		# sitting on until either end moves. set-head re-reads which branch that
+		# is, because the symref is written at clone time and not updated since.
+		git -C "$dir" remote set-head --auto origin >/dev/null
+		resolved="$(git -C "$dir" rev-parse --verify --quiet 'origin/HEAD^{commit}' || true)"
+
+		if [[ -z $resolved ]]; then
+			echo "source: cannot resolve the default branch of ${repo}" >&2
+			return 1
+		fi
 	fi
+	git -C "$dir" checkout --quiet --detach "$resolved"
 
 	exec 9>&-
 }

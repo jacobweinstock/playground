@@ -33,11 +33,13 @@ tasks:
       Runs before the state file exists, because the state file is built from
       what this produces.
     vars:
-      # Gated on the block existing, not on repo being set. Gating on repo would
-      # make a half-filled `source:` silently skip the build, and the first sign
-      # of it would be cue rejecting an empty commit three steps later.
+      # Gated on the block holding something, not on repo being set. Gating on
+      # repo would make a half-filled `source:` silently skip the build, and the
+      # first sign of it would be cue rejecting an empty commit three steps
+      # later. A key written with no value parses as null and means absent,
+      # which is how cue reads it too, so has() alone is not enough.
       SOURCE_PRESENT:
-        sh: 'yq eval ''has("source")'' {{.CONFIG_FILE_FQ_PATH}}'
+        sh: 'yq eval ''has("source") and .source != null'' {{.CONFIG_FILE_FQ_PATH}}'
       REPO:
         sh: 'yq eval ''.source.repo // ""'' {{.CONFIG_FILE_FQ_PATH}}'
       REF:
